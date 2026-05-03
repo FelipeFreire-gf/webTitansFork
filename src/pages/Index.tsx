@@ -26,6 +26,8 @@ import vssGif from '@/assets/vssGif.gif';
 import sslGif from '@/assets/sslGif.gif';
 import combateGif from '@/assets/combateGif.gif';
 
+const PARTNERSHIP_LOGOS = ["UnB", "IEEE", "RARs", "Dr Eletrônico"] as const;
+
 const Index = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [api, setApi] = useState<any>(null);
@@ -417,6 +419,8 @@ const Index = () => {
 
             </p>
 
+
+
             <div className="group relative mx-auto mb-10 max-w-md">
               <div
                 className="pointer-events-none absolute -inset-3 rounded-3xl bg-gradient-to-br from-titans-red/50 via-titans-orange/40 to-titans-gold/30 opacity-70 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
@@ -432,6 +436,23 @@ const Index = () => {
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="flex justify-center mb-6">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-titans-red to-titans-orange hover:from-titans-red/90 hover:to-titans-orange/90 text-white font-semibold px-8 py-3 shadow-lg shadow-titans-red/25"
+                asChild
+              >
+                <a
+                  href="https://docs.google.com/forms/d/e/1FAIpQLScdpgShgFvmgjkOS31xk9nXVh3CM0WfdlsyU6ZRiP8CcqotcQ/viewform"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Inscrever-se no processo seletivo
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
             </div>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -551,38 +572,23 @@ const Index = () => {
             <h2 className="text-2xl font-bold text-white">Parcerias</h2>
           </div>
           <div className="relative overflow-hidden">
-            <div className="flex items-center animate-scroll-left">
-              {/* First set */}
-              <div className="flex items-center space-x-8 flex-shrink-0">
-                <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">UnB</span>
+            <div className="flex w-max animate-scroll-left motion-reduce:animate-none">
+              {[0, 1].map((copy) => (
+                <div
+                  key={copy}
+                  className="flex shrink-0 items-center gap-8 pr-8"
+                  aria-hidden={copy === 1 ? true : undefined}
+                >
+                  {PARTNERSHIP_LOGOS.map((name) => (
+                    <div
+                      key={`${copy}-${name}`}
+                      className="flex min-w-fit items-center whitespace-nowrap rounded-lg bg-white/20 px-6 py-4"
+                    >
+                      <span className="text-lg font-bold text-white">{name}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">IEEE</span>
-                </div>
-                <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">RARs</span>
-                </div>
-              </div>
-              
-              {/* Duplicate set for continuous scroll */}
-              <div className="flex items-center space-x-8 flex-shrink-0 ml-8">
-                <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">UnB</span>
-                </div>
-                <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">IEEE</span>
-                </div>
-                <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">Dr Eletrônico</span>
-                </div>
-                <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">RARs</span>
-                </div>
-                  <div className="flex items-center bg-white/20 rounded-lg px-6 py-4 min-w-fit whitespace-nowrap">
-                  <span className="text-white font-bold text-lg">IEEE</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
