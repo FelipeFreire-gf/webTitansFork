@@ -8,6 +8,13 @@ import { Link } from "react-router-dom";
 
 import robotVsss from '@/assets/robotVsss.png';
 
+import filipePhoto from "@/assets/fotosVsss/filipeErnesto.png";
+import erickMacielPhoto from "@/assets/fotosVsss/erickMaciel.png";
+import pietroPhoto from "@/assets/fotosVsss/pietro.png";
+import yzabellaPhoto from "@/assets/fotosVsss/yzabella.png";
+import nathanPhoto from "@/assets/fotosVsss/nathan.png";
+import felixPhoto from "@/assets/fotosVsss/felix.png";
+
 const VSSS = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -167,14 +174,34 @@ const VSSS = () => {
             <h3 className="text-xl font-semibold text-center mb-8">Gerentes de Projeto</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
               {[
-                { name: "Filipe Barbosa", role: "Gerente de Projeto", expertise: "Gestão e desenvolvimento" },
-                { name: "Erick Maciel", role: "Gerente de Projeto", expertise: "Gestão e desenvolvimento" },
+                {
+                  name: "Filipe Barbosa",
+                  role: "Gerente de Projeto",
+                  expertise: "Gestão e desenvolvimento",
+                  photo: filipePhoto,
+                },
+                {
+                  name: "Erick Maciel",
+                  role: "Gerente de Projeto",
+                  expertise: "Gestão e desenvolvimento",
+                  photo: erickMacielPhoto,
+                },
               ].map((leader, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-24 h-24 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in leader && leader.photo ? (
+                      <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-titans-gold/25 bg-muted">
+                        <img
+                          src={leader.photo}
+                          alt={`Foto de ${leader.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{leader.name}</h4>
                     <p className="text-titans-gold text-sm mb-2">{leader.role}</p>
                     <p className="text-muted-foreground text-sm">{leader.expertise}</p>
@@ -189,18 +216,28 @@ const VSSS = () => {
             <h3 className="text-xl font-semibold text-center mb-8">Membros</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[
-                { name: "Pietro", role: "Membro", expertise: "Equipe VSSS" },
-                { name: "Yzabella", role: "Membro", expertise: "Equipe VSSS" },
-                { name: "Nathan", role: "Membro", expertise: "Equipe VSSS" },
+                { name: "Pietro", role: "Membro", expertise: "Equipe VSSS", photo: pietroPhoto },
+                { name: "Yzabella", role: "Membro", expertise: "Equipe VSSS", photo: yzabellaPhoto },
+                { name: "Nathan", role: "Membro", expertise: "Equipe VSSS", photo: nathanPhoto },
                 { name: "João Canabarro", role: "Membro", expertise: "Equipe VSSS" },
-                { name: "Félix", role: "Membro", expertise: "Equipe VSSS" },
+                { name: "Félix", role: "Membro", expertise: "Equipe VSSS", photo: felixPhoto },
                 { name: "Arthur Silva", role: "Membro", expertise: "Equipe VSSS" },
               ].map((member, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-20 h-20 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in member && member.photo ? (
+                      <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-titans-gold/25 bg-muted">
+                        <img
+                          src={member.photo}
+                          alt={`Foto de ${member.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{member.name}</h4>
                     <p className="text-titans-gold text-sm mb-2">{member.role}</p>
                     <p className="text-muted-foreground text-sm">{member.expertise}</p>

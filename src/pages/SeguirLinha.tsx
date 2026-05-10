@@ -6,13 +6,13 @@ import Footer from "@/components/Footer";
 import { ArrowLeft, Trophy, Zap, Target, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import seguidorEletronica from '@/assets/seguidorCad2.png';
-import felipeDasNevesPhoto from "@/assets/imgLipeTitans2.jpg";
-import arthurPhoto from "@/assets/arthur.png";
-import gustavoPhoto from "@/assets/gustavo.png";
-import henriquePhoto from "@/assets/henrique.png";
-import joaoVictorPhoto from "@/assets/joaoVictor.png";
-import thamiresPhoto from "@/assets/thamires.png";
+import seguidorEletronica from "@/assets/fotosSeguidor/seguidorCad2.png";
+import felipeDasNevesPhoto from "@/assets/fotosSeguidor/imgLipeTitans2.jpg";
+import arthurPhoto from "@/assets/fotosSeguidor/arthur.png";
+import gustavoPhoto from "@/assets/fotosSeguidor/gustavo.png";
+import henriquePhoto from "@/assets/fotosSeguidor/henrique.png";
+import joaoVictorPhoto from "@/assets/fotosSeguidor/joaoVictor.png";
+import thamiresPhoto from "@/assets/fotosSeguidor/thamires.png";
 
 import lider from '@/assets/combateGif.gif';
 

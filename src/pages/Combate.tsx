@@ -8,6 +8,13 @@ import { Link } from "react-router-dom";
 
 import robotCombate from '@/assets/robotCombate.jpeg';
 
+import octavioPhoto from "@/assets/fotosCombate/octavio.png";
+import mariaClaraPhoto from "@/assets/fotosCombate/mariaClara.png";
+import hybsonPhoto from "@/assets/fotosCombate/hybson.png";
+import laisPhoto from "@/assets/fotosCombate/lais.png";
+import pauloLuccaPhoto from "@/assets/fotosCombate/pauloLucca.png";
+import rafaelaPhoto from "@/assets/fotosCombate/rafaela.png";
+
 const Combate = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -168,14 +175,33 @@ const Combate = () => {
             <h3 className="text-xl font-semibold text-center mb-8">Gerentes de Projeto</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
               {[
-                { name: "Octávio Silva", role: "Gerente de Projeto", expertise: "Gestão e desenvolvimento" },
-                { name: "Gabriel Cavalcanti", role: "Gerente de Projeto", expertise: "Gestão e desenvolvimento" },
+                {
+                  name: "Octávio Silva",
+                  role: "Gerente de Projeto",
+                  expertise: "Gestão e desenvolvimento",
+                  photo: octavioPhoto,
+                },
+                {
+                  name: "Gabriel Cavalcanti",
+                  role: "Gerente de Projeto",
+                  expertise: "Gestão e desenvolvimento",
+                },
               ].map((leader, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-24 h-24 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in leader && leader.photo ? (
+                      <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-titans-red/25 bg-muted">
+                        <img
+                          src={leader.photo}
+                          alt={`Foto de ${leader.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{leader.name}</h4>
                     <p className="text-titans-red text-sm mb-2">{leader.role}</p>
                     <p className="text-muted-foreground text-sm">{leader.expertise}</p>
@@ -190,20 +216,30 @@ const Combate = () => {
             <h3 className="text-xl font-semibold text-center mb-8">Membros</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { name: "Maria Clara", role: "Membro", expertise: "Equipe de combate" },
-                { name: "Hybson", role: "Membro", expertise: "Equipe de combate" },
-                { name: "Laís", role: "Membro", expertise: "Equipe de combate" },
+                { name: "Maria Clara", role: "Membro", expertise: "Equipe de combate", photo: mariaClaraPhoto },
+                { name: "Hybson", role: "Membro", expertise: "Equipe de combate", photo: hybsonPhoto },
+                { name: "Laís", role: "Membro", expertise: "Equipe de combate", photo: laisPhoto },
                 { name: "Osmar", role: "Membro", expertise: "Equipe de combate" },
-                { name: "Paulo Lucca", role: "Membro", expertise: "Equipe de combate" },
+                { name: "Paulo Lucca", role: "Membro", expertise: "Equipe de combate", photo: pauloLuccaPhoto },
                 { name: "Erick", role: "Membro", expertise: "Equipe de combate" },
-                { name: "Rafaela", role: "Membro", expertise: "Equipe de combate" },
+                { name: "Rafaela", role: "Membro", expertise: "Equipe de combate", photo: rafaelaPhoto },
                 { name: "Sara", role: "Membro", expertise: "Equipe de combate" },
               ].map((member, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-20 h-20 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in member && member.photo ? (
+                      <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-titans-red/25 bg-muted">
+                        <img
+                          src={member.photo}
+                          alt={`Foto de ${member.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{member.name}</h4>
                     <p className="text-titans-red text-sm mb-2">{member.role}</p>
                     <p className="text-muted-foreground text-sm">{member.expertise}</p>
