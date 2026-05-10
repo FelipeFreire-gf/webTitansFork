@@ -23,10 +23,6 @@ const VSSS = () => {
             </Link>
             */}
             
-            <Badge className="mb-4 bg-gradient-to-r from-titans-orange to-titans-gold text-titans-dark">
-              Modalidade
-            </Badge>
-            
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
               <span className="bg-gradient-to-r from-titans-orange to-titans-gold bg-clip-text text-transparent">
                 VSSS

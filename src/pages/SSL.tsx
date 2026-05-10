@@ -26,7 +26,7 @@ const SSL = () => {
             */}
             
             <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
-              Modalidade
+              Categoria - EL
             </Badge>
             
             <h1 className="text-4xl md:text-6xl font-bold mb-6">

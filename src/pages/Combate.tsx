@@ -25,7 +25,7 @@ const Combate = () => {
             */}
             
             <Badge className="mb-4 bg-gradient-to-r from-titans-red to-titans-orange text-white">
-              Modalidade
+              Categoria - Beetleweight
             </Badge>
             
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
