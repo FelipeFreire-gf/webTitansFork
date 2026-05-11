@@ -12,6 +12,8 @@ import luizAmaralPhoto from "@/assets/fotosSsl/luizAmaral.png";
 import danielLustosaPhoto from "@/assets/fotosSsl/danielLustosa.png";
 import danielRicardiPhoto from "@/assets/fotosSsl/daniel.png";
 import gabriellyPhoto from "@/assets/fotosSsl/gabrielly.png";
+import gabriellyCarvalhoPhoto from "@/assets/fotosSsl/gabriellyCarvalho.png";
+import lucasAlvesPhoto from "@/assets/fotosSsl/lucasAlves.png";
 import raulPhoto from "@/assets/fotosSsl/raul.png";
 
 const SSL = () => {
@@ -173,7 +175,7 @@ const SSL = () => {
           {/* Gerentes */}
           <div className="mb-12">
             <h3 className="text-xl font-semibold text-center mb-8">Gerentes de Projeto</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {[
                 {
                   name: "Luiz Amaral",
@@ -186,6 +188,12 @@ const SSL = () => {
                   role: "Gerente de Projeto",
                   expertise: "Eletrônica e Software",
                   photo: danielLustosaPhoto,
+                },
+                {
+                  name: "Daniel Ricardi",
+                  role: "Gerente de Projeto",
+                  expertise: "Mecânica",
+                  photo: danielRicardiPhoto,
                 },
               ].map((leader, index) => (
                 <Card key={index} className="text-center">
@@ -218,12 +226,16 @@ const SSL = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {[
                 { name: "João Gabryel", role: "Membro", expertise: "Eletrônica", photo: joaoGabryelPhoto },
-                { name: "Daniel Ricardi", role: "Membro", expertise: "Mecânica", photo: danielRicardiPhoto },
                 { name: "Pedro Lucena", role: "Membro", expertise: "Mecânica" },
-                { name: "Gabrielly", role: "Membro", expertise: "Mecânica", photo: gabriellyPhoto },
+                {
+                  name: "Gabrielly Carvalho",
+                  role: "Membro",
+                  expertise: "Mecânica",
+                  photo: gabriellyCarvalhoPhoto,
+                },
                 { name: "Raul Braga", role: "Membro", expertise: "Software", photo: raulPhoto },
                 { name: "Gabriel de Sousa", role: "Membro", expertise: "Software" },
-                { name: "Lucas Alves", role: "Membro", expertise: "Software" },
+                { name: "Lucas Alves", role: "Membro", expertise: "Software", photo: lucasAlvesPhoto },
               ].map((member, index) => (
                 <Card key={`${member.name}-${index}`} className="text-center">
                   <CardContent className="p-6">

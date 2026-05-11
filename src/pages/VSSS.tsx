@@ -8,12 +8,14 @@ import { Link } from "react-router-dom";
 
 import robotVsss from '@/assets/robotVsss.png';
 
-import filipePhoto from "@/assets/fotosVsss/filipeErnesto.png";
+import filipePhoto from "@/assets/fotosVsss/filipeErnesto2.png";
 import erickMacielPhoto from "@/assets/fotosVsss/erickMaciel.png";
 import pietroPhoto from "@/assets/fotosVsss/pietro.png";
+import joaoCanabarroPhoto from "@/assets/fotosVsss/joaoCanabarro.png";
 import yzabellaPhoto from "@/assets/fotosVsss/yzabella.png";
 import nathanPhoto from "@/assets/fotosVsss/nathan.png";
 import felixPhoto from "@/assets/fotosVsss/felix.png";
+import arthurPhoto from "@/assets/fotosVsss/arthur.png";
 
 const VSSS = () => {
   return (
@@ -219,9 +221,9 @@ const VSSS = () => {
                 { name: "Pietro", role: "Membro", expertise: "Equipe VSSS", photo: pietroPhoto },
                 { name: "Yzabella", role: "Membro", expertise: "Equipe VSSS", photo: yzabellaPhoto },
                 { name: "Nathan", role: "Membro", expertise: "Equipe VSSS", photo: nathanPhoto },
-                { name: "João Canabarro", role: "Membro", expertise: "Equipe VSSS" },
+                { name: "João Canabarro", role: "Membro", expertise: "Equipe VSSS", photo: joaoCanabarroPhoto },
                 { name: "Félix", role: "Membro", expertise: "Equipe VSSS", photo: felixPhoto },
-                { name: "Arthur Silva", role: "Membro", expertise: "Equipe VSSS" },
+                { name: "Arthur Silva", role: "Membro", expertise: "Equipe VSSS", photo: arthurPhoto },
               ].map((member, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">

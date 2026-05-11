@@ -8,12 +8,16 @@ import { Link } from "react-router-dom";
 
 import robotCombate from '@/assets/robotCombate.jpeg';
 
+import fotoEquipeCombate from "@/assets/fotosCombate/fotoEquipeC.jpeg";
 import octavioPhoto from "@/assets/fotosCombate/octavio.png";
-import mariaClaraPhoto from "@/assets/fotosCombate/mariaClara.png";
+import gabrielCavalcantiPhoto from "@/assets/fotosCombate/gabrielCavalcante.png";
+import mariaClaraPhoto from "@/assets/fotosCombate/mariaClara2.png";
 import hybsonPhoto from "@/assets/fotosCombate/hybson.png";
 import laisPhoto from "@/assets/fotosCombate/lais.png";
+import osmarPhoto from "@/assets/fotosCombate/osmar.png";
 import pauloLuccaPhoto from "@/assets/fotosCombate/pauloLucca.png";
 import rafaelaPhoto from "@/assets/fotosCombate/rafaela.png";
+import saraPhoto from "@/assets/fotosCombate/sara.png";
 
 const Combate = () => {
   return (
@@ -81,11 +85,11 @@ const Combate = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-titans-red">12</div>
+                  <div className="text-2xl font-bold text-titans-red">3</div>
                   <div className="text-sm text-muted-foreground">Robôs de Guerra</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-titans-red">25</div>
+                  <div className="text-2xl font-bold text-titans-red">2</div>
                   <div className="text-sm text-muted-foreground">Batalhas Vencidas</div>
                 </div>
               </div>
@@ -162,11 +166,13 @@ const Combate = () => {
           
           {/* Team Photo */}
           <div className="flex justify-center mb-12">
-            <div className="w-96 h-64 bg-gradient-to-br from-titans-red/20 to-titans-orange/20 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-              <div className="text-center">
-                <Users className="h-16 w-16 text-titans-red mx-auto mb-2" />
-                <p className="text-muted-foreground text-sm">Foto da Equipe</p>
-              </div>
+            <div className="w-96 h-64 bg-gradient-to-br from-titans-red/20 to-titans-orange/20 rounded-lg overflow-hidden border border-border">
+              <img
+                src={fotoEquipeCombate}
+                alt="Foto da equipe de combate"
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
             </div>
           </div>
 
@@ -185,6 +191,7 @@ const Combate = () => {
                   name: "Gabriel Cavalcanti",
                   role: "Gerente de Projeto",
                   expertise: "Gestão e desenvolvimento",
+                  photo: gabrielCavalcantiPhoto,
                 },
               ].map((leader, index) => (
                 <Card key={index} className="text-center">
@@ -219,11 +226,11 @@ const Combate = () => {
                 { name: "Maria Clara", role: "Membro", expertise: "Equipe de combate", photo: mariaClaraPhoto },
                 { name: "Hybson", role: "Membro", expertise: "Equipe de combate", photo: hybsonPhoto },
                 { name: "Laís", role: "Membro", expertise: "Equipe de combate", photo: laisPhoto },
-                { name: "Osmar", role: "Membro", expertise: "Equipe de combate" },
+                { name: "Osmar", role: "Membro", expertise: "Equipe de combate", photo: osmarPhoto },
                 { name: "Paulo Lucca", role: "Membro", expertise: "Equipe de combate", photo: pauloLuccaPhoto },
                 { name: "Erick", role: "Membro", expertise: "Equipe de combate" },
                 { name: "Rafaela", role: "Membro", expertise: "Equipe de combate", photo: rafaelaPhoto },
-                { name: "Sara", role: "Membro", expertise: "Equipe de combate" },
+                { name: "Sara", role: "Membro", expertise: "Equipe de combate", photo: saraPhoto },
               ].map((member, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">

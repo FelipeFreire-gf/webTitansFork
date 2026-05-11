@@ -16,6 +16,10 @@ import thamiresPhoto from "@/assets/fotosSeguidor/thamires.png";
 
 import lider from '@/assets/combateGif.gif';
 
+/** Efeito em cima da foto do Felipe (fundo preto do GIF some com mix-blend-screen). */
+const FELIPE_OVERLAY_GIF =
+  "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnk0aDdmbzk1aHBwOTRpYmkyNmo5d2czZnF3bGNuZWIya3A4emZtMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/NkwUVZDI1OXbLxoiX9/giphy.gif";
+
 const SeguirLinha = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -179,6 +183,7 @@ const SeguirLinha = () => {
                   role: "Software",
                   expertise: "Mapeamento e Controle",
                   photo: felipeDasNevesPhoto,
+                  overlayGif: FELIPE_OVERLAY_GIF,
                 },
                 {
                   name: "Arthur Vilas boas",
@@ -189,12 +194,21 @@ const SeguirLinha = () => {
               ].map((leader, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-titans-orange/25 bg-muted">
+                    <div className="relative mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-titans-orange/25 bg-muted">
                       <img
                         src={leader.photo}
                         alt={`Foto de ${leader.name}`}
                         className="h-full w-full object-cover"
                       />
+                      {"overlayGif" in leader && leader.overlayGif ? (
+                        <img
+                          src={leader.overlayGif}
+                          alt=""
+                          className="pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen"
+                          aria-hidden
+                          loading="eager"
+                        />
+                      ) : null}
                     </div>
                     <h4 className="font-semibold mb-1">{leader.name}</h4>
                     <p className="text-titans-orange text-sm mb-2">{leader.role}</p>
