@@ -7,6 +7,14 @@ import { ArrowLeft, Cpu, Network, Zap, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import robotSsl from '@/assets/robotSsl.png';
+import joaoGabryelPhoto from "@/assets/fotosSsl/joaoGabryel.png";
+import luizAmaralPhoto from "@/assets/fotosSsl/luizAmaral.png";
+import danielLustosaPhoto from "@/assets/fotosSsl/danielLustosa.png";
+import danielRicardiPhoto from "@/assets/fotosSsl/daniel.png";
+import gabriellyCarvalhoPhoto from "@/assets/fotosSsl/gabriellyCarvalho.png";
+import pedroLucenaPhoto from "@/assets/fotosSsl/pedroLucena.png";
+import lucasAlvesPhoto from "@/assets/fotosSsl/lucasAlves.png";
+import raulPhoto from "@/assets/fotosSsl/raul.png";
 
 const SSL = () => {
   return (
@@ -26,7 +34,7 @@ const SSL = () => {
             */}
             
             <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white">
-              Modalidade
+              Categoria - EL
             </Badge>
             
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -164,19 +172,45 @@ const SSL = () => {
             </div>
           </div>
 
-          {/* Leaders */}
+          {/* Gerentes */}
           <div className="mb-12">
-            <h3 className="text-xl font-semibold text-center mb-8">Líderes</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+            <h3 className="text-xl font-semibold text-center mb-8">Gerentes de Projeto</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {[
-                { name: "Diego Almeida", role: "Líder Técnico", expertise: "Sistemas Omnidirecionais" },
-                { name: "Beatriz Souza", role: "Líder de IA", expertise: "Planejamento Multi-agente" },
+                {
+                  name: "Luiz Amaral",
+                  role: "Gerente de Projeto",
+                  expertise: "Eletrônica",
+                  photo: luizAmaralPhoto,
+                },
+                {
+                  name: "Daniel Lustosa",
+                  role: "Gerente de Projeto",
+                  expertise: "Eletrônica e Software",
+                  photo: danielLustosaPhoto,
+                },
+                {
+                  name: "Daniel Ricardi",
+                  role: "Gerente de Projeto",
+                  expertise: "Mecânica",
+                  photo: danielRicardiPhoto,
+                },
               ].map((leader, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-24 h-24 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in leader && leader.photo ? (
+                      <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-blue-500/25 bg-muted">
+                        <img
+                          src={leader.photo}
+                          alt={`Foto de ${leader.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{leader.name}</h4>
                     <p className="text-blue-500 text-sm mb-2">{leader.role}</p>
                     <p className="text-muted-foreground text-sm">{leader.expertise}</p>
@@ -186,20 +220,38 @@ const SSL = () => {
             </div>
           </div>
 
-          {/* Members */}
+          {/* Membros */}
           <div>
             <h3 className="text-xl font-semibold text-center mb-8">Membros</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {[
-                { name: "Gabriel Pereira", role: "RF Engineer", expertise: "Comunicação e Controle" },
-                { name: "Fernanda Silva", role: "Motion Engineer", expertise: "Controle de Movimento" },
-                { name: "Ricardo Moura", role: "Game Analyst", expertise: "Estratégias de Jogo" },
+                { name: "João Gabryel", role: "Membro", expertise: "Eletrônica", photo: joaoGabryelPhoto },
+                { name: "Pedro Lucena", role: "Membro", expertise: "Mecânica", photo: pedroLucenaPhoto },
+                {
+                  name: "Gabrielly Carvalho",
+                  role: "Membro",
+                  expertise: "Mecânica",
+                  photo: gabriellyCarvalhoPhoto,
+                },
+                { name: "Raul Braga", role: "Membro", expertise: "Software", photo: raulPhoto },
+                { name: "Gabriel de Sousa", role: "Membro", expertise: "Software" },
+                { name: "Lucas Alves", role: "Membro", expertise: "Software", photo: lucasAlvesPhoto },
               ].map((member, index) => (
-                <Card key={index} className="text-center">
+                <Card key={`${member.name}-${index}`} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-20 h-20 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in member && member.photo ? (
+                      <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-blue-500/25 bg-muted">
+                        <img
+                          src={member.photo}
+                          alt={`Foto de ${member.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{member.name}</h4>
                     <p className="text-blue-500 text-sm mb-2">{member.role}</p>
                     <p className="text-muted-foreground text-sm">{member.expertise}</p>

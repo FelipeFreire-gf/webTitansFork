@@ -20,6 +20,7 @@ import pet from '@/assets/pet.jpeg';
 import symposium from '@/assets/symposium.jpeg';
 import vssEvent from '@/assets/vssEvent.jpeg';
 import psRoverImage from "@/assets/psRover.jpeg";
+import roverTitansImage from "@/assets/roverTitans.jpeg";
 
 import seguidorGif from '@/assets/seguidorGif.gif';
 import vssGif from '@/assets/vssGif.gif';
@@ -230,8 +231,8 @@ const Index = () => {
                     <div className="w-12 h-12 bg-gradient-to-br from-titans-red to-titans-orange rounded-lg mx-auto mb-2 flex items-center justify-center">
                       <Zap className="h-6 w-6 text-white" />
                     </div>
-                    <div className="text-2xl font-bold text-titans-orange">4</div>
-                    <div className="text-sm text-muted-foreground">Modalidades</div>
+                    <div className="text-2xl font-bold text-titans-orange">5</div>
+                    <div className="text-sm text-muted-foreground">modalidades de competição</div>
                   </CardContent>
                 </Card>
                 
@@ -240,8 +241,8 @@ const Index = () => {
                     <div className="w-12 h-12 bg-gradient-to-br from-titans-orange to-titans-gold rounded-lg mx-auto mb-2 flex items-center justify-center">
                       <Target className="h-6 w-6 text-white" />
                     </div>
-                    <div className="text-2xl font-bold text-titans-orange">100+</div>
-                    <div className="text-sm text-muted-foreground">Projetos</div>
+                    <div className="text-2xl font-bold text-titans-orange">mais de 14</div>
+                    <div className="text-sm text-muted-foreground">projetos</div>
                   </CardContent>
                 </Card>
               </div>
@@ -397,8 +398,11 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Processo Seletivo Section */}
-      <section className="py-16 bg-gradient-to-br from-titans-red/10 via-titans-orange/5 to-titans-gold/10">
+      {/* Processo Seletivo Section — âncora para login "Saiba como participar" */}
+      <section
+        id="inscricoes"
+        className="scroll-mt-20 py-16 bg-gradient-to-br from-titans-red/10 via-titans-orange/5 to-titans-gold/10"
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
            {/*
@@ -502,6 +506,73 @@ const Index = () => {
             </div>
             */}
 
+          </div>
+        </div>
+      </section>
+
+      {/* Vaquinha — Rover na Lua (Vakinha.com.br) */}
+      <section className="py-16 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Rover na Lua
+              </h2>
+              <div className="mx-auto mb-6 max-w-2xl overflow-hidden rounded-2xl border border-titans-orange/20 shadow-lg shadow-titans-red/10 ring-1 ring-inset ring-white/10">
+                <img
+                  src={roverTitansImage}
+                  alt="Rover espacial com marca Titans em terreno rochoso — projeto Rover na Lua"
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
+              </div>
+              <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                Desenvolvimento de rovers pelo Grupo de Robótica Titans e pelo Capítulo Estudantil AESS.
+              </p>
+            </div>
+
+            <Card className="border-titans-orange/25 bg-gradient-to-br from-titans-red/5 via-background to-titans-gold/5 shadow-lg">
+              <CardContent className="p-8 md:p-10">
+                <p className="text-foreground font-medium mb-4">
+                  Ajude a Titans a construir o futuro da robótica. Imagine um rover, projetado e construído por
+                  estudantes, explorando terrenos e enfrentando desafios tecnológicos de alto nível — o projeto já
+                  está saindo do papel e precisa do seu apoio para ir ainda mais longe.
+                </p>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  A meta é ambiciosa: levar o rover do papel com excelência técnica. Já foram arrecadados cerca de{" "}
+                  <span className="text-foreground font-medium">R$ 26 mil</span>; a meta da campanha é de{" "}
+                  <span className="text-foreground font-medium">R$ 100 mil</span> para componentes e estrutura
+                  necessários ao rover. Qualquer contribuição faz diferença.
+                </p>
+                <p className="text-sm text-muted-foreground mb-8">
+                  Vaquinha criada em 29/04/2026 na plataforma Vakinha.
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-center mb-8">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-titans-red to-titans-orange hover:from-titans-red/90 hover:to-titans-orange/90 text-white font-semibold px-8 shadow-lg shadow-titans-red/25"
+                    asChild
+                  >
+                    <a
+                      href="https://www.vakinha.com.br/vaquinha/rover-na-lua-desenvolvimento-de-rovers-pelo-grupo-de-robotica-titans-e-pelo-capitulo-estudantil-aess"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Apoiar na Vakinha
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+
+                <div className="rounded-xl border border-titans-orange/20 bg-card/60 px-5 py-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Contribua também via Pix</p>
+                  <p className="font-mono text-base font-semibold tracking-tight break-all">
+                    6094196@vakinha.com.br
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

@@ -8,6 +8,17 @@ import { Link } from "react-router-dom";
 
 import robotCombate from '@/assets/robotCombate.jpeg';
 
+import fotoEquipeCombate from "@/assets/fotosCombate/fotoEquipeC.jpeg";
+import octavioPhoto from "@/assets/fotosCombate/octavio.png";
+import gabrielCavalcantiPhoto from "@/assets/fotosCombate/gabrielCavalcante.png";
+import mariaClaraPhoto from "@/assets/fotosCombate/mariaClara2.png";
+import hybsonPhoto from "@/assets/fotosCombate/hybson.png";
+import laisPhoto from "@/assets/fotosCombate/lais.png";
+import osmarPhoto from "@/assets/fotosCombate/osmar.png";
+import pauloLuccaPhoto from "@/assets/fotosCombate/pauloLucca.png";
+import rafaelaPhoto from "@/assets/fotosCombate/rafaela.png";
+import saraPhoto from "@/assets/fotosCombate/sara.png";
+
 const Combate = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -25,7 +36,7 @@ const Combate = () => {
             */}
             
             <Badge className="mb-4 bg-gradient-to-r from-titans-red to-titans-orange text-white">
-              Modalidade
+              Categoria - Beetleweight
             </Badge>
             
             <h1 className="text-4xl md:text-6xl font-bold mb-6">
@@ -74,11 +85,11 @@ const Combate = () => {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-titans-red">12</div>
+                  <div className="text-2xl font-bold text-titans-red">3</div>
                   <div className="text-sm text-muted-foreground">Robôs de Guerra</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-titans-red">25</div>
+                  <div className="text-2xl font-bold text-titans-red">2</div>
                   <div className="text-sm text-muted-foreground">Batalhas Vencidas</div>
                 </div>
               </div>
@@ -155,11 +166,13 @@ const Combate = () => {
           
           {/* Team Photo */}
           <div className="flex justify-center mb-12">
-            <div className="w-96 h-64 bg-gradient-to-br from-titans-red/20 to-titans-orange/20 rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-              <div className="text-center">
-                <Users className="h-16 w-16 text-titans-red mx-auto mb-2" />
-                <p className="text-muted-foreground text-sm">Foto da Equipe</p>
-              </div>
+            <div className="w-96 h-64 bg-gradient-to-br from-titans-red/20 to-titans-orange/20 rounded-lg overflow-hidden border border-border">
+              <img
+                src={fotoEquipeCombate}
+                alt="Foto da equipe de combate"
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
             </div>
           </div>
 
@@ -168,14 +181,34 @@ const Combate = () => {
             <h3 className="text-xl font-semibold text-center mb-8">Gerentes de Projeto</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
               {[
-                { name: "Octávio Silva", role: "Líder de Combate", expertise: "Armas e Sistemas de Ataque" },
-                { name: "Ana Rodrigues", role: "Líder de Defesa", expertise: "Blindagem e Proteção" },
+                {
+                  name: "Octávio Silva",
+                  role: "Gerente de Projeto",
+                  expertise: "Gestão e desenvolvimento",
+                  photo: octavioPhoto,
+                },
+                {
+                  name: "Gabriel Cavalcanti",
+                  role: "Gerente de Projeto",
+                  expertise: "Gestão e desenvolvimento",
+                  photo: gabrielCavalcantiPhoto,
+                },
               ].map((leader, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-24 h-24 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in leader && leader.photo ? (
+                      <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-titans-red/25 bg-muted">
+                        <img
+                          src={leader.photo}
+                          alt={`Foto de ${leader.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{leader.name}</h4>
                     <p className="text-titans-red text-sm mb-2">{leader.role}</p>
                     <p className="text-muted-foreground text-sm">{leader.expertise}</p>
@@ -188,17 +221,32 @@ const Combate = () => {
           {/* Members */}
           <div>
             <h3 className="text-xl font-semibold text-center mb-8">Membros</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
-                { name: "Lucas Martins", role: "Pilot", expertise: "Controle e Estratégia" },
-                { name: "Bruno Silva", role: "Weapon Designer", expertise: "Desenvolvimento de Armas" },
-                { name: "Carla Mendes", role: "Systems Analyst", expertise: "Análise de Performance" },
+                { name: "Maria Clara", role: "Membro", expertise: "Equipe de combate", photo: mariaClaraPhoto },
+                { name: "Hybson", role: "Membro", expertise: "Equipe de combate", photo: hybsonPhoto },
+                { name: "Laís", role: "Membro", expertise: "Equipe de combate", photo: laisPhoto },
+                { name: "Osmar", role: "Membro", expertise: "Equipe de combate", photo: osmarPhoto },
+                { name: "Paulo Lucca", role: "Membro", expertise: "Equipe de combate", photo: pauloLuccaPhoto },
+                { name: "Erick", role: "Membro", expertise: "Equipe de combate" },
+                { name: "Rafaela", role: "Membro", expertise: "Equipe de combate", photo: rafaelaPhoto },
+                { name: "Sara", role: "Membro", expertise: "Equipe de combate", photo: saraPhoto },
               ].map((member, index) => (
                 <Card key={index} className="text-center">
                   <CardContent className="p-6">
-                    <div className="w-20 h-20 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center border-2 border-dashed border-border">
-                      <span className="text-muted-foreground text-xs">Foto</span>
-                    </div>
+                    {"photo" in member && member.photo ? (
+                      <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-titans-red/25 bg-muted">
+                        <img
+                          src={member.photo}
+                          alt={`Foto de ${member.name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-border bg-muted">
+                        <span className="text-xs text-muted-foreground">Foto</span>
+                      </div>
+                    )}
                     <h4 className="font-semibold mb-1">{member.name}</h4>
                     <p className="text-titans-red text-sm mb-2">{member.role}</p>
                     <p className="text-muted-foreground text-sm">{member.expertise}</p>

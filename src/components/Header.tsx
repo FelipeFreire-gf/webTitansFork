@@ -1,18 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Users } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const location = useLocation();
 
   const navigation = [
     { name: "Início", href: "/" },
-    { name: "Quem Somos", href: "#sobre" },
-    { name: "Modalidades", href: "#modalidades" },
-    {/* { name: "Processo Seletivo", href: "/inscricao" },*/}  
+    { name: "Quem Somos", href: "/#sobre" },
+    { name: "Modalidades", href: "/#modalidades" },
   ];
 
   const teams = [
@@ -45,13 +43,13 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-8">
             <ThemeToggle />
             {navigation.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.href}
                 className="text-foreground/80 hover:text-foreground transition-colors"
               >
                 {item.name}
-              </a>
+              </Link>
             ))}
             
             {/* Equipes Dropdown */}
@@ -103,14 +101,14 @@ const Header = () => {
                 <ThemeToggle />
               </div>
               {navigation.map((item) => (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.href}
                   className="block px-3 py-2 text-foreground/80 hover:text-foreground transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.name}
-                </a>
+                </Link>
               ))}
               <div className="border-t border-border my-2"></div>
               <p className="px-3 py-1 text-sm font-medium text-foreground/60">Equipes</p>
