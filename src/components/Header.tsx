@@ -18,6 +18,7 @@ const Header = () => {
     { name: "Combate", href: "/combate" },
     { name: "VSSS", href: "/vsss" },
     { name: "SSL", href: "/ssl" },
+    { name: "Feedback", href: "/feedback" },
   ];
 
   return (
