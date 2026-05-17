@@ -27,7 +27,21 @@ import vssGif from '@/assets/vssGif.gif';
 import sslGif from '@/assets/sslGif.gif';
 import combateGif from '@/assets/combateGif.gif';
 
-const PARTNERSHIP_LOGOS = ["UnB", "IEEE", "RAS", "Dr Eletrônico"] as const;
+import unbLogo from "@/assets/parcerias/unb.png";
+import ieeeLogo from "@/assets/parcerias/ieee.png";
+import rasLogo from "@/assets/parcerias/ras.png";
+import labAbertoLogo from "@/assets/parcerias/labAberto.png";
+import drEletronicoLogo from "@/assets/parcerias/drEletronico.png";
+import aessLogo from "@/assets/parcerias/aess.png";
+
+const PARTNERSHIP_LOGOS = [
+  { src: unbLogo, alt: "Universidade de Brasília" },
+  { src: ieeeLogo, alt: "IEEE" },
+  { src: rasLogo, alt: "RAS" },
+  { src: aessLogo, alt: "AESS" },
+  { src: labAbertoLogo, alt: "Lab Aberto" },
+  { src: drEletronicoLogo, alt: "Dr Eletrônico" },
+] as const;
 
 const Index = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -650,12 +664,16 @@ const Index = () => {
                   className="flex shrink-0 items-center gap-8 pl-8"
                   aria-hidden={copy > 0 ? true : undefined}
                 >
-                  {PARTNERSHIP_LOGOS.map((name, index) => (
+                  {PARTNERSHIP_LOGOS.map((partner, index) => (
                     <div
-                      key={`${copy}-${name}-${index}`}
-                      className="flex h-14 min-w-[200px] items-center justify-center whitespace-nowrap rounded-lg bg-white/20 px-8 py-4 backdrop-blur-sm"
+                      key={`${copy}-${partner.alt}-${index}`}
+                      className="flex h-28 min-w-[220px] items-center justify-center rounded-lg bg-white/90 px-8 py-4 backdrop-blur-sm"
                     >
-                      <span className="text-lg font-bold text-white">{name}</span>
+                      <img
+                        src={partner.src}
+                        alt={partner.alt}
+                        className="h-16 w-auto max-w-[200px] object-contain"
+                      />
                     </div>
                   ))}
                 </div>
