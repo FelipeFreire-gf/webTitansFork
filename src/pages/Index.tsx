@@ -7,18 +7,14 @@ import { ArrowRight, Zap, Shield, Camera, Brain, Users, Code, Trophy, Target } f
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-import seguidorImage from "@/assets/seguidor-linha.jpg";
-import combateImage from "@/assets/combate.jpg";
-import vsssImage from "@/assets/vsss.jpg";
-import sslImage from "@/assets/ssl.jpg";
-
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import confraImg from '@/assets/confra26.jpeg';
-import teamMember from '@/assets/teamMember.jpeg';
-import sslEvent from '@/assets/sslEvent.jpeg';
-import pet from '@/assets/pet.jpeg';
-import symposium from '@/assets/symposium.jpeg';
-import vssEvent from '@/assets/vssEvent.jpeg';
+import bannerConfra from "@/assets/banner/confra26.jpeg";
+import bannerTeamMember from "@/assets/banner/teamMember.jpeg";
+import bannerSslEvent from "@/assets/banner/sslEvent.jpeg";
+import bannerRcx2025 from "@/assets/banner/rcx2025.png";
+import bannerVssEvent from "@/assets/banner/vssEvent.jpeg";
+import bannerCienciaNaEstrada from "@/assets/banner/cienciaNaEstrada.png";
+import bannerCienciaNaEstradaExtensao from "@/assets/banner/cienciaNaEstradaExtencao.png";
 import psRoverImage from "@/assets/psRover.jpeg";
 import roverTitansImage from "@/assets/roverTitans.jpeg";
 
@@ -44,48 +40,16 @@ const PARTNERSHIP_LOGOS = [
 ] as const;
 
 const Index = () => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [api, setApi] = useState<any>(null);
-  const images = [seguidorImage, combateImage, vsssImage, sslImage];
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
 
-  const robotImages = [
-    {
-      src: confraImg,
-      title: "",
-      description: ""
-    },
-    {
-      src: teamMember,
-      title: "",
-      description: ""
-    },
-    {
-      src: sslEvent,
-      title: "",
-      description: ""
-    },
-    {
-      src: pet,
-      title: "",
-      description: ""
-    },
-    {
-      src: symposium,
-      title: "",
-      description: ""
-    },
-    {
-      src: vssEvent,
-      title: "",
-      description: ""
-    },
+  const bannerImages = [
+    { src: bannerRcx2025, alt: "RCX 2025 — Titans" },
+    { src: bannerTeamMember, alt: "Membros da equipe TITANS" },
+    { src: bannerSslEvent, alt: "Competição SSL" },
+    { src: bannerVssEvent, alt: "Competição VSS" },
+    { src: bannerConfra, alt: "Confraternização TITANS" },
+    { src: bannerCienciaNaEstrada, alt: "Ciência na Estrada — TITANS" },
+    { src: bannerCienciaNaEstradaExtensao, alt: "Ciência na Estrada — extensão" },
   ];
 
   useEffect(() => {
@@ -147,22 +111,15 @@ const Index = () => {
                     }}
                   >
                     <CarouselContent>
-                      {robotImages.map((image, index) => (
-                        <CarouselItem key={index}>
-                          <div className="text-center">
-                            <div className="relative mb-4 rounded-lg overflow-hidden aspect-[4/3] bg-titans-dark/20">
-                              <img 
-                                src={image.src} 
-                                alt={image.title}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-titans-dark/60 via-transparent to-transparent" />
-                              <div className="absolute bottom-2 left-2 right-2 text-white">
-                                <h4 className="font-bold text-sm mb-1">{image.title}</h4>
-                                <p className="text-xs opacity-90">{image.description}</p>
-                              </div>
-                            </div>
+                      {bannerImages.map((image) => (
+                        <CarouselItem key={image.alt}>
+                          <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-lg bg-titans-dark/20">
+                            <img
+                              src={image.src}
+                              alt={image.alt}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
                           </div>
                         </CarouselItem>
                       ))}
@@ -214,7 +171,7 @@ const Index = () => {
       </section>
 
       {/* About */}
-      <section id="sobre" className="py-16">
+      <section id="sobre" className="scroll-mt-20 py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
@@ -266,7 +223,7 @@ const Index = () => {
       </section>
 
       {/* Modalidades Section */}
-      <section id="modalidades" className="py-16 bg-muted/20">
+      <section id="modalidades" className="scroll-mt-20 py-16 bg-muted/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">O que fazemos?</h2>
@@ -525,7 +482,7 @@ const Index = () => {
       </section>
 
       {/* Vaquinha — Rover na Lua (Vakinha.com.br) */}
-      <section className="py-16 bg-muted/30">
+      <section id="apoiar" className="scroll-mt-20 py-16 bg-muted/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">

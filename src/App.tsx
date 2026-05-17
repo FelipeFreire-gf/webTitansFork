@@ -15,6 +15,9 @@ import Login from "./pages/Login";
 import Inscricao from "./pages/Inscricao";
 import Produtos from "./pages/Produtos";
 import FeedbackPage from "./pages/FeedbackPage";
+import Projetos from "./pages/Projetos";
+import RoboBio from "./pages/RoboBio";
+import ExtensaoEscolas from "./pages/ExtensaoEscolas";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +38,9 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/inscricao" element={<Inscricao />} />
             <Route path="/produtos" element={<Produtos />} />
+            <Route path="/projetos" element={<Projetos />} />
+            <Route path="/projetos/robo-bio" element={<RoboBio />} />
+            <Route path="/projetos/extensao-escolas" element={<ExtensaoEscolas />} />
             <Route path="/feedback" element={<FeedbackPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

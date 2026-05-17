@@ -11,14 +11,9 @@ const Header = () => {
     { name: "Início", href: "/" },
     { name: "Quem Somos", href: "/#sobre" },
     { name: "Modalidades", href: "/#modalidades" },
-  ];
-
-  const teams = [
-    { name: "Seguidor de Linha", href: "/seguidor-linha" },
-    { name: "Combate", href: "/combate" },
-    { name: "VSSS", href: "/vsss" },
-    { name: "SSL", href: "/ssl" },
-    { name: "Feedback", href: "/feedback" },
+    { name: "Inscrições", href: "/#inscricoes" },
+    { name: "Apoiar", href: "/#apoiar" },
+    { name: "Projetos Destaques", href: "/projetos" },
   ];
 
   return (
@@ -52,26 +47,6 @@ const Header = () => {
                 {item.name}
               </Link>
             ))}
-            
-            {/* Equipes Dropdown */}
-            <div className="relative group">
-              <button className="text-foreground/80 hover:text-foreground transition-colors">
-                Equipes
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                <div className="py-2">
-                  {teams.map((team) => (
-                    <Link
-                      key={team.name}
-                      to={team.href}
-                      className="block px-4 py-2 text-sm text-foreground/80 hover:text-foreground hover:bg-muted transition-colors"
-                    >
-                      {team.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
             
             <Link 
               to="/login"
@@ -111,20 +86,7 @@ const Header = () => {
                   {item.name}
                 </Link>
               ))}
-              <div className="border-t border-border my-2"></div>
-              <p className="px-3 py-1 text-sm font-medium text-foreground/60">Equipes</p>
-              {teams.map((team) => (
-                <Link
-                  key={team.name}
-                  to={team.href}
-                  className="block px-3 py-2 text-foreground/80 hover:text-foreground transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {team.name}
-                  </Link>
-                ))}
-              </div>
-              <div className="border-t border-border my-2"></div>
+              <div className="border-t border-border my-2" />
               <Link
                 to="/login"
                 className="block px-3 py-2 text-foreground/80 hover:text-foreground transition-colors"
@@ -133,6 +95,7 @@ const Header = () => {
                 <Users className="h-4 w-4 inline-block mr-2" />
                 Área dos Membros
               </Link>
+            </div>
           </div>
         )}
       </nav>
