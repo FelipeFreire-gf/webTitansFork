@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Login = () => {
@@ -25,7 +25,7 @@ const Login = () => {
       </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center space-x-2 mb-4">
+          <Link href="/" className="inline-flex items-center space-x-2 mb-4">
             <div className="w-12 h-12 bg-gradient-to-br from-titans-red to-titans-orange rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xl">T</span>
             </div>
@@ -92,7 +92,7 @@ const Login = () => {
                   <input type="checkbox" className="rounded border-border" />
                   <span className="text-muted-foreground">Lembrar de mim</span>
                 </label>
-                <Link to="#" className="text-titans-orange hover:text-titans-red transition-colors">
+                <Link href="#" className="text-titans-orange hover:text-titans-red transition-colors">
                   Esqueci minha senha
                 </Link>
               </div>
@@ -110,7 +110,7 @@ const Login = () => {
                 Não é membro ainda?
               </p>
               <Button variant="outline" className="w-full" asChild>
-                <Link to="/#inscricoes">
+                <Link href="/#inscricoes">
                   Saiba como participar
                 </Link>
               </Button>

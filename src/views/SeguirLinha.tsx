@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Trophy, Zap, Target, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 import seguidorEletronica from "@/assets/fotosSeguidor/seguidorCad2.png";
 import felipeDasNevesPhoto from "@/assets/fotosSeguidor/imgLipeTitans2.jpg";
@@ -30,7 +30,7 @@ const SeguirLinha = () => {
           <div className="max-w-4xl mx-auto text-center">
 
             {/* 
-            <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao início
             </Link>
@@ -97,7 +97,7 @@ const SeguirLinha = () => {
               <div className="text-center">
                  
                    <img 
-                      src={seguidorEletronica} 
+                      src={seguidorEletronica.src} 
                       alt="Modalidade robótica" 
                       className="w-full h-full object-cover transition-all duration-1000"
                     />
@@ -196,7 +196,7 @@ const SeguirLinha = () => {
                   <CardContent className="p-6">
                     <div className="relative mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-titans-orange/25 bg-muted">
                       <img
-                        src={leader.photo}
+                        src={leader.photo.src}
                         alt={`Foto de ${leader.name}`}
                         className="h-full w-full object-cover"
                       />
@@ -253,7 +253,7 @@ const SeguirLinha = () => {
                   <CardContent className="p-6">
                     <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-titans-orange/25 bg-muted">
                       <img
-                        src={member.photo}
+                        src={member.photo.src}
                         alt={`Foto de ${member.name}`}
                         className="h-full w-full object-cover"
                       />

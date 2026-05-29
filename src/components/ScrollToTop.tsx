@@ -1,14 +1,17 @@
+"use client";
+
 import { useLayoutEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { usePathname } from "next/navigation";
 
 /**
  * Restaura o scroll ao topo ao navegar entre rotas (evita herdar a posição da página anterior).
  * Se a URL tiver hash (ex.: /#inscricoes), rola até o elemento correspondente em vez do topo.
  */
 const ScrollToTop = () => {
-  const { pathname, hash } = useLocation();
+  const pathname = usePathname();
 
   useLayoutEffect(() => {
+    const hash = window.location.hash;
     if (hash) {
       const id = hash.slice(1);
       if (id) {
@@ -20,7 +23,7 @@ const ScrollToTop = () => {
       }
     }
     window.scrollTo(0, 0);
-  }, [pathname, hash]);
+  }, [pathname]);
 
   return null;
 };

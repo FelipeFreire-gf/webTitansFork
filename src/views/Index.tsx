@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Zap, Shield, Camera, Brain, Users, Code, Trophy, Target } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { useState, useEffect } from "react";
 
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
@@ -31,25 +31,25 @@ import drEletronicoLogo from "@/assets/parcerias/drEletronico.png";
 import aessLogo from "@/assets/parcerias/aess.png";
 
 const PARTNERSHIP_LOGOS = [
-  { src: unbLogo, alt: "Universidade de Brasília" },
-  { src: ieeeLogo, alt: "IEEE" },
-  { src: rasLogo, alt: "RAS" },
-  { src: aessLogo, alt: "AESS" },
-  { src: labAbertoLogo, alt: "Lab Aberto" },
-  { src: drEletronicoLogo, alt: "Dr Eletrônico" },
+  { src: unbLogo.src, alt: "Universidade de Brasília" },
+  { src: ieeeLogo.src, alt: "IEEE" },
+  { src: rasLogo.src, alt: "RAS" },
+  { src: aessLogo.src, alt: "AESS" },
+  { src: labAbertoLogo.src, alt: "Lab Aberto" },
+  { src: drEletronicoLogo.src, alt: "Dr Eletrônico" },
 ] as const;
 
 const Index = () => {
   const [api, setApi] = useState<any>(null);
 
   const bannerImages = [
-    { src: bannerRcx2025, alt: "RCX 2025 — Titans" },
-    { src: bannerTeamMember, alt: "Membros da equipe TITANS" },
-    { src: bannerSslEvent, alt: "Competição SSL" },
-    { src: bannerVssEvent, alt: "Competição VSS" },
-    { src: bannerConfra, alt: "Confraternização TITANS" },
-    { src: bannerCienciaNaEstrada, alt: "Ciência na Estrada — TITANS" },
-    { src: bannerCienciaNaEstradaExtensao, alt: "Ciência na Estrada — extensão" },
+    { src: bannerRcx2025.src, alt: "RCX 2025 — Titans" },
+    { src: bannerTeamMember.src, alt: "Membros da equipe TITANS" },
+    { src: bannerSslEvent.src, alt: "Competição SSL" },
+    { src: bannerVssEvent.src, alt: "Competição VSS" },
+    { src: bannerConfra.src, alt: "Confraternização TITANS" },
+    { src: bannerCienciaNaEstrada.src, alt: "Ciência na Estrada — TITANS" },
+    { src: bannerCienciaNaEstradaExtensao.src, alt: "Ciência na Estrada — extensão" },
   ];
 
   useEffect(() => {
@@ -238,7 +238,7 @@ const Index = () => {
                 <div className="flex items-start space-x-4">
                   <div className="w-56 h-56 rounded-lg overflow-hidden flex-shrink-0">
                     <img 
-                      src={seguidorGif} 
+                      src={seguidorGif.src} 
                       alt="Modalidade robótica" 
                       className="w-full h-full object-cover transition-all duration-1000"
                     />
@@ -248,7 +248,7 @@ const Index = () => {
                     <p className="text-muted-foreground text-sm mb-3">
                       Robôs autônomos que seguem trajetos com precisão e velocidade
                     </p>
-                    <Link to="/seguidor-linha" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
+                    <Link href="/seguidor-linha" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
                       Saiba mais <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
                   </div>
@@ -261,7 +261,7 @@ const Index = () => {
                 <div className="flex items-start space-x-4">
                   <div className="w-56 h-56 rounded-lg overflow-hidden flex-shrink-0">
                     <img 
-                      src={combateGif} 
+                      src={combateGif.src} 
                       alt="Modalidade robótica" 
                       className="w-full h-full object-cover transition-all duration-1000"
                     />
@@ -271,7 +271,7 @@ const Index = () => {
                     <p className="text-muted-foreground text-sm mb-3">
                       Robôs de guerra projetados para competições de estratégia e resistência
                     </p>
-                    <Link to="/combate" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
+                    <Link href="/combate" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
                       Saiba mais <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
                   </div>
@@ -284,7 +284,7 @@ const Index = () => {
                 <div className="flex items-start space-x-4">
                   <div className="w-56 h-56 rounded-lg overflow-hidden flex-shrink-0">
                     <img 
-                      src={vssGif} 
+                      src={vssGif.src} 
                       alt="Modalidade robótica" 
                       className="w-full h-full object-cover transition-all duration-1000"
                     />
@@ -294,7 +294,7 @@ const Index = () => {
                     <p className="text-muted-foreground text-sm mb-3">
                       Futebol robótico com visão computacional e inteligência artificial
                     </p>
-                    <Link to="/vsss" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
+                    <Link href="/vsss" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
                       Saiba mais <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
                   </div>
@@ -307,7 +307,7 @@ const Index = () => {
                 <div className="flex items-start space-x-4">
                   <div className="w-56 h-56 rounded-lg overflow-hidden flex-shrink-0">
                     <img 
-                      src={sslGif} 
+                      src={sslGif.src} 
                       alt="Modalidade robótica" 
                       className="w-full h-full object-cover transition-all duration-1000"
                     />
@@ -317,7 +317,7 @@ const Index = () => {
                     <p className="text-muted-foreground text-sm mb-3">
                       Futebol robótico de alta performance com robôs omnidirecionais
                     </p>
-                    <Link to="/ssl" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
+                    <Link href="/ssl" className="text-titans-orange hover:text-titans-red transition-colors text-sm font-medium inline-flex items-center">
                       Saiba mais <ArrowRight className="h-4 w-4 ml-1" />
                     </Link>
                   </div>
@@ -404,7 +404,7 @@ const Index = () => {
               <div className="relative overflow-hidden rounded-2xl border border-titans-red/25 bg-gradient-to-br from-titans-red/10 to-titans-orange/5 p-1 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_25px_50px_-12px_rgba(185,28,28,0.35)]">
                 <div className="overflow-hidden rounded-xl bg-black/20 ring-1 ring-inset ring-white/10">
                   <img
-                    src={psRoverImage}
+                    src={psRoverImage.src}
                     alt="Cartaz do processo seletivo — projeto rover TITANS"
                     className="w-full h-auto object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-[1.04]"
                     loading="lazy"
@@ -470,7 +470,7 @@ const Index = () => {
                 className="bg-gradient-to-r from-titans-red to-titans-orange hover:from-titans-red/90 hover:to-titans-orange/90 text-white font-semibold px-8 py-3"
                 asChild
               >
-                <Link to="/inscricao">
+                <Link href="/inscricao">
                   Inscreva-se agora
                 </Link>
               </Button>
@@ -491,7 +491,7 @@ const Index = () => {
               </h2>
               <div className="mx-auto mb-6 max-w-2xl overflow-hidden rounded-2xl border border-titans-orange/20 shadow-lg shadow-titans-red/10 ring-1 ring-inset ring-white/10">
                 <img
-                  src={roverTitansImage}
+                  src={roverTitansImage.src}
                   alt="Rover espacial com marca Titans em terreno rochoso — projeto Rover na Lua"
                   className="w-full h-auto object-cover"
                   loading="lazy"
@@ -598,7 +598,7 @@ const Index = () => {
               size="lg"
               asChild
             >
-              <Link to="/produtos">
+              <Link href="/produtos">
                 Ver todos os produtos
               </Link>
             </Button>

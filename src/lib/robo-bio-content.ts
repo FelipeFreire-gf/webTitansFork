@@ -18,17 +18,17 @@ export const ROBO_BIO_TITLE = "Robô Bio — Seguidor de Linha";
 export const ROBO_BIO_SUMMARY =
   "Seguidor de linha (FSE/FCTE-UnB): da V1 com PID e telemetria à calibração bioinspirada e visão computacional do trajeto.";
 
-export const ROBO_BIO_COVER = capaRoboBio;
+export const ROBO_BIO_COVER = capaRoboBio.src;
 
 export const ROBO_BIO_MEMBERS = [
-  { name: "Felipe das Neves", photo: felipeDasNevesPhoto },
+  { name: "Felipe das Neves", photo: felipeDasNevesPhoto.src },
 ] as const;
 
 export const ROBO_BIO_HERO_IMAGES = [
-  { src: capaRoboBio, alt: "Robô Bio — foto do projeto" },
-  { src: renderV2, alt: "Robô Bio — render 3D" },
-  { src: desmontado, alt: "Robô Bio — visão desmontada" },
-  { src: roboBioV1, alt: "Robô Bio — primeira versão" },
+  { src: capaRoboBio.src, alt: "Robô Bio — foto do projeto" },
+  { src: renderV2.src, alt: "Robô Bio — render 3D" },
+  { src: desmontado.src, alt: "Robô Bio — visão desmontada" },
+  { src: roboBioV1.src, alt: "Robô Bio — primeira versão" },
 ] as const;
 
 export type RoboBioSectionId =
@@ -65,14 +65,14 @@ export const ROBO_BIO_SECTIONS: RoboBioSection[] = [
       {
         text: "Na primeira versão, o firmware foi desenvolvido em ESP-IDF para o ESP32. O robô lia a pista com sensores de refletância e corrigia a trajetória com controle PID sobre a velocidade dos motores, buscando um seguimento estável na faixa. Ainda não foi possível adotar algoritmos bioinspirados para o ajuste automático das constantes de PID: problemas mecânicos recorrentes — o chassi prendia na manta emborrachada — exigiram remodelagem estrutural antes de avançar no controle inteligente.",
         image: {
-          src: roboBioV1,
+          src: roboBioV1.src,
           alt: "Robô Bio V1 — primeira versão do seguidor de linha",
         },
       },
       {
         text: "O V1 também contava com Wi-Fi e MQTT, enviando telemetria em tempo real ao ThingsBoard. Esse fluxo de dados facilitou monitorar o comportamento na pista, calibrar o PID manualmente e depurar o sistema à distância — experiência que orienta as versões seguintes do projeto.",
         image: {
-          src: thingsboardDashboard,
+          src: thingsboardDashboard.src,
           alt: "Dashboard ThingsBoard — telemetria em tempo real do Robô Bio V1",
         },
       },
@@ -85,7 +85,7 @@ export const ROBO_BIO_SECTIONS: RoboBioSection[] = [
       {
         text: "Visto que os principais problemas do modelo anterior estavam no design mecânico, a ideia do Robô Bio V2 é um chassi grande o suficiente para abrigar as mais variadas ideias possíveis: microcontroladores de diferentes tipos, eletrônica em nível de prototipagem e espaço físico para evoluir sem as limitações de tamanho da V1.",
         image: {
-          src: renderV2,
+          src: renderV2.src,
           alt: "Robô Bio V2 — render 3D do chassi inspirado no ExoMy",
         },
       },
@@ -152,12 +152,12 @@ export const ROBO_BIO_SECTIONS: RoboBioSection[] = [
       },
     ],
     images: [
-      { src: inicioMontagem, alt: "Início da montagem do Robô Bio" },
-      { src: engrenagemMotor, alt: "Engrenagem acoplada ao motor" },
-      { src: chanfroMotor, alt: "Motor com chanfro antes do ajuste" },
-      { src: chanfroRemovidoMotor, alt: "Motor após remoção do chanfro" },
-      { src: remontagemMotor, alt: "Remontagem do conjunto motor-engrenagem" },
-      { src: remontagemMotor2, alt: "Detalhe da remontagem dos motores" },
+      { src: inicioMontagem.src, alt: "Início da montagem do Robô Bio" },
+      { src: engrenagemMotor.src, alt: "Engrenagem acoplada ao motor" },
+      { src: chanfroMotor.src, alt: "Motor com chanfro antes do ajuste" },
+      { src: chanfroRemovidoMotor.src, alt: "Motor após remoção do chanfro" },
+      { src: remontagemMotor.src, alt: "Remontagem do conjunto motor-engrenagem" },
+      { src: remontagemMotor2.src, alt: "Detalhe da remontagem dos motores" },
     ],
   },
 ];

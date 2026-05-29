@@ -12,18 +12,18 @@ export const EXTENSAO_ESCOLAS_TITLE = "Extensão em Escolas";
 export const EXTENSAO_ESCOLAS_SUMMARY =
   "Projeto de extensão da TITANS que leva robótica e tecnologia para escolas, com oficinas e atividades práticas para estudantes.";
 
-export const EXTENSAO_ESCOLAS_COVER = capaExtensao;
+export const EXTENSAO_ESCOLAS_COVER = capaExtensao.src;
 
 export const EXTENSAO_ESCOLAS_MEMBERS = [
-  { name: "Raul Braga", photo: raulPhoto },
-  { name: "Filipe Ernesto", photo: filipeErnestoPhoto },
-  { name: "Daniel Lustosa", photo: danielLustosaPhoto },
+  { name: "Raul Braga", photo: raulPhoto.src },
+  { name: "Filipe Ernesto", photo: filipeErnestoPhoto.src },
+  { name: "Daniel Lustosa", photo: danielLustosaPhoto.src },
 ] as const;
 
 export const EXTENSAO_ESCOLAS_HERO_IMAGES = [
-  { src: capaExtensao, alt: "Extensão em escolas — capa do projeto" },
-  { src: escolaSantaMaria, alt: "Atividade na Escola Santa Maria" },
-  { src: escolaCasaGrande, alt: "Atividade na Escola Casa Grande" },
+  { src: capaExtensao.src, alt: "Extensão em escolas — capa do projeto" },
+  { src: escolaSantaMaria.src, alt: "Atividade na Escola Santa Maria" },
+  { src: escolaCasaGrande.src, alt: "Atividade na Escola Casa Grande" },
 ] as const;
 
 export type ExtensaoEscolasSectionId = "sobre" | "atividades" | "galeria";
@@ -37,12 +37,12 @@ export type ExtensaoEscolasSection = {
 
 export const EXTENSAO_ESCOLAS_VISITS = [
   {
-    src: escolaSantaMaria,
+    src: escolaSantaMaria.src,
     alt: "Atividade de extensão na Escola Santa Maria",
     name: "Escola Santa Maria",
   },
   {
-    src: escolaCasaGrande,
+    src: escolaCasaGrande.src,
     alt: "Atividade de extensão na Escola Casa Grande",
     name: "Escola Casa Grande",
   },

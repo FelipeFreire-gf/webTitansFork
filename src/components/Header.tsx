@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Header = () => {
@@ -21,7 +21,7 @@ const Header = () => {
       <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link href="/" className="flex items-center space-x-2">
 
           {/* <div className="w-10 h-10 bg-gradient-to-br from-titans-red to-titans-orange rounded-lg flex items-center justify-center">       </div>*/}
           
@@ -41,7 +41,7 @@ const Header = () => {
             {navigation.map((item) => (
               <Link
                 key={item.name}
-                to={item.href}
+                href={item.href}
                 className="text-foreground/80 hover:text-foreground transition-colors"
               >
                 {item.name}
@@ -49,7 +49,7 @@ const Header = () => {
             ))}
             
             <Link 
-              to="/login"
+              href="/login"
               className="text-foreground/80 hover:text-foreground transition-colors p-2 rounded-lg hover:bg-muted/50"
               title="Área dos Membros"
             >
@@ -79,7 +79,7 @@ const Header = () => {
               {navigation.map((item) => (
                 <Link
                   key={item.name}
-                  to={item.href}
+                  href={item.href}
                   className="block px-3 py-2 text-foreground/80 hover:text-foreground transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -88,7 +88,7 @@ const Header = () => {
               ))}
               <div className="border-t border-border my-2" />
               <Link
-                to="/login"
+                href="/login"
                 className="block px-3 py-2 text-foreground/80 hover:text-foreground transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >

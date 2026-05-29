@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Shield, Swords, Flame, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 import robotCombate from '@/assets/robotCombate.jpeg';
 
@@ -29,7 +29,7 @@ const Combate = () => {
           <div className="max-w-4xl mx-auto text-center">
 
             {/* 
-            <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao início
             </Link>
@@ -99,7 +99,7 @@ const Combate = () => {
               <div className="text-center">
                 
               <img 
-                      src={robotCombate} 
+                      src={robotCombate.src} 
                       alt="Modalidade robótica" 
                       className="w-full h-full object-cover transition-all duration-1000"
                />
@@ -168,7 +168,7 @@ const Combate = () => {
           <div className="flex justify-center mb-12">
             <div className="w-96 h-64 bg-gradient-to-br from-titans-red/20 to-titans-orange/20 rounded-lg overflow-hidden border border-border">
               <img
-                src={fotoEquipeCombate}
+                src={fotoEquipeCombate.src}
                 alt="Foto da equipe de combate"
                 className="h-full w-full object-cover"
                 loading="lazy"
@@ -199,7 +199,7 @@ const Combate = () => {
                     {"photo" in leader && leader.photo ? (
                       <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-titans-red/25 bg-muted">
                         <img
-                          src={leader.photo}
+                          src={leader.photo.src}
                           alt={`Foto de ${leader.name}`}
                           className="h-full w-full object-cover"
                         />
@@ -237,7 +237,7 @@ const Combate = () => {
                     {"photo" in member && member.photo ? (
                       <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-titans-red/25 bg-muted">
                         <img
-                          src={member.photo}
+                          src={member.photo.src}
                           alt={`Foto de ${member.name}`}
                           className="h-full w-full object-cover"
                         />
