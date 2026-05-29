@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Cpu, Network, Zap, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 import robotSsl from '@/assets/robotSsl.png';
 import joaoGabryelPhoto from "@/assets/fotosSsl/joaoGabryel.png";
@@ -27,7 +27,7 @@ const SSL = () => {
           <div className="max-w-4xl mx-auto text-center">
 
             {/* 
-            <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <Link href="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao início
             </Link>
@@ -96,7 +96,7 @@ const SSL = () => {
               <div className="text-center">
                 
                <img 
-                      src={robotSsl} 
+                      src={robotSsl.src} 
                       alt="Modalidade robótica" 
                       className="w-full h-full object-cover transition-all duration-1000"
                />
@@ -201,7 +201,7 @@ const SSL = () => {
                     {"photo" in leader && leader.photo ? (
                       <div className="mx-auto mb-4 h-24 w-24 overflow-hidden rounded-full border-2 border-blue-500/25 bg-muted">
                         <img
-                          src={leader.photo}
+                          src={leader.photo.src}
                           alt={`Foto de ${leader.name}`}
                           className="h-full w-full object-cover"
                         />
@@ -242,7 +242,7 @@ const SSL = () => {
                     {"photo" in member && member.photo ? (
                       <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-2 border-blue-500/25 bg-muted">
                         <img
-                          src={member.photo}
+                          src={member.photo.src}
                           alt={`Foto de ${member.name}`}
                           className="h-full w-full object-cover"
                         />

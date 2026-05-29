@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Upload, UserPlus } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Inscricao = () => {
@@ -44,7 +44,7 @@ const Inscricao = () => {
         <div className="max-w-2xl mx-auto">
           <div className="flex items-center mb-8">
             <Button variant="ghost" size="icon" asChild className="mr-4">
-              <Link to="/">
+              <Link href="/">
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>

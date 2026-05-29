@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import ProjectParticipants from "@/components/ProjectParticipants";
 import type { Project } from "@/lib/projects-data";
 
@@ -29,7 +29,7 @@ const ProjectCard = ({ project }: ProjectCardProps) => {
         <ProjectParticipants members={project.members} className="mb-6" />
 
         <Button variant="hero" size="lg" className="w-full" asChild>
-          <Link to={project.detailHref}>
+          <Link href={project.detailHref}>
             Conheça mais o projeto
             <ArrowRight className="ml-2 h-4 w-4" />
           </Link>

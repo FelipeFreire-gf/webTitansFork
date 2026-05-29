@@ -6,7 +6,7 @@ import ProjectParticipants from "@/components/ProjectParticipants";
 import ScrollingImageGallery from "@/components/ScrollingImageGallery";
 import { cn } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import {
   EXTENSAO_ESCOLAS_HERO_IMAGES,
   EXTENSAO_ESCOLAS_INTRO,
@@ -55,7 +55,7 @@ const ExtensaoEscolas = () => {
       <section className="pt-20 pb-10 bg-gradient-to-b from-background to-muted/10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Link
-            to="/projetos"
+            href="/projetos"
             className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors text-sm"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
