@@ -1,22 +1,51 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { loginSchema, LoginFormValues } from "@/lib/login-schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Users } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle login logic here
-    console.log("Login attempt:", { email, password });
-  };
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
+    },
+  });
+
+  async function onSubmit(data: LoginFormValues) {
+    const toastId = toast.loading("Entrando...");
+
+    try {
+      // TODO: integrar com API de autenticação
+      console.log("Login attempt:", data);
+      toast.success("Login realizado com sucesso!", { id: toastId });
+    } catch (error) {
+      toast.error("Email ou senha incorretos", {
+        id: toastId,
+        description: "Verifique suas credenciais e tente novamente.",
+      });
+      console.error("Erro no login:", error);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-titans-red/5 flex items-center justify-center p-4">
@@ -45,65 +74,93 @@ const Login = () => {
             <CardTitle className="text-xl">Login de Membro</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="matricula@aluno.unb.br"
+                          className="h-11"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Digite sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-11 pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-11 w-10 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Digite sua senha"
+                            className="h-11 pr-10"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-11 w-10 hover:bg-transparent"
+                            onClick={() => setShowPassword(!showPassword)}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex items-center justify-between text-sm">
+                  <FormField
+                    control={form.control}
+                    name="rememberMe"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center space-x-2 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-muted-foreground font-normal cursor-pointer">
+                          Lembrar de mim
+                        </FormLabel>
+                      </FormItem>
                     )}
-                  </Button>
+                  />
+                  <Link href="#" className="text-titans-orange hover:text-titans-red transition-colors">
+                    Esqueci minha senha
+                  </Link>
                 </div>
-              </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input type="checkbox" className="rounded border-border" />
-                  <span className="text-muted-foreground">Lembrar de mim</span>
-                </label>
-                <Link href="#" className="text-titans-orange hover:text-titans-red transition-colors">
-                  Esqueci minha senha
-                </Link>
-              </div>
-
-              <Button 
-                type="submit" 
-                className="w-full h-11 bg-gradient-to-r from-titans-red to-titans-orange hover:from-titans-red/90 hover:to-titans-orange/90 text-white font-semibold"
-              >
-                Entrar
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  className="w-full h-11 bg-gradient-to-r from-titans-red to-titans-orange hover:from-titans-red/90 hover:to-titans-orange/90 text-white font-semibold"
+                >
+                  Entrar
+                </Button>
+              </form>
+            </Form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground mb-4">
