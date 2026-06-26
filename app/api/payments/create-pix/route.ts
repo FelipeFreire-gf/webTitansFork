@@ -182,7 +182,48 @@ export async function POST(req: Request) {
       num_paginas: paginasReais,
     });
   } catch (err) {
-    console.error("Erro chamando Mercado Pago:", err);
-    return Response.json({ error: "Falha ao gerar PIX" }, { status: 502 });
+    // O SDK do Mercado Pago (v2) lança erros cujo motivo útil vive em campos
+    // que o console.error padrão costuma esconder (cause/causes/message/status).
+    // Extraímos isso explicitamente para o log e devolvemos o detalhe ao cliente
+    // — são descrições da API do MP (ex.: "collector user without key enabled"),
+    // não segredos —, permitindo diagnosticar pelo DevTools sem acesso aos logs.
+    const detalhe = extrairDetalheErroMP(err);
+    console.error("Erro chamando Mercado Pago:", detalhe, err);
+    return Response.json(
+      { error: "Falha ao gerar PIX", detalhe },
+      { status: 502 }
+    );
   }
+}
+
+// Normaliza o erro do SDK do Mercado Pago num texto legível, cobrindo as várias
+// formas em que o motivo aparece (cause[].description, causes[].description,
+// message) além do status HTTP da API.
+function extrairDetalheErroMP(err: unknown): string {
+  if (!err || typeof err !== "object") return String(err);
+  const e = err as Record<string, unknown>;
+
+  const status = e.status ?? e.statusCode;
+  const causasBrutas = (Array.isArray(e.cause) && e.cause) ||
+    (Array.isArray(e.causes) && e.causes) ||
+    [];
+  const causas = causasBrutas
+    .map((c) => {
+      if (c && typeof c === "object") {
+        const obj = c as Record<string, unknown>;
+        const cod = obj.code ?? obj.error_code;
+        const desc = obj.description ?? obj.message;
+        return [cod, desc].filter(Boolean).join(": ");
+      }
+      return String(c);
+    })
+    .filter(Boolean);
+
+  const partes = [
+    status != null ? `status ${status}` : null,
+    typeof e.message === "string" ? e.message : null,
+    causas.length ? causas.join(" | ") : null,
+  ].filter(Boolean);
+
+  return partes.length ? partes.join(" — ") : "erro desconhecido do Mercado Pago";
 }

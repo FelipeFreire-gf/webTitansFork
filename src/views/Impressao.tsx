@@ -79,7 +79,8 @@ const Impressao = () => {
       });
       if (!resp.ok) {
         const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error ?? "Falha ao gerar PIX");
+        const base = body.error ?? "Falha ao gerar PIX";
+        throw new Error(body.detalhe ? `${base}: ${body.detalhe}` : base);
       }
       const dados = (await resp.json()) as DadosPagamento;
       // Exibe o valor e a contagem autoritativos vindos do servidor.
