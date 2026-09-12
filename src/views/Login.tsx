@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, LoginFormValues } from "@/lib/login-schema";
@@ -16,48 +18,62 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Eye, EyeOff, Users } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import Header from "@/components/Header";
+import bixoTitans from "@/assets/bixoTitansS.png";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const form = useForm<LoginFormValues>({resolver: zodResolver(loginSchema),
     defaultValues: {
       email: "",
       password: "",
-      passwordConfirm: "",
       rememberMe: false,
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    console.log("Login attempt:", data);
+  const onSubmit = async (data: LoginFormValues) => {
+    setLoginError(null);
+    setIsSubmitting(true);
+
+    const result = await signIn("credentials", {
+      email: data.email,
+      password: data.password,
+      redirect: false,
+    });
+
+    setIsSubmitting(false);
+
+    if (result?.error) {
+      setLoginError(
+        result.code === "conta-inativa"
+          ? "Sua conta está inativa. Fale com a liderança da equipe."
+          : "E-mail ou senha inválidos."
+      );
+      return;
+    }
+
+    router.push("/equipe");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-titans-red/5 flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-titans-red to-titans-orange rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">T</span>
-            </div>
-            <span className="font-bold text-2xl bg-gradient-to-r from-titans-red to-titans-orange bg-clip-text text-transparent">
-              TITANS
-            </span>
-          </Link>
-          <h1 className="text-2xl font-bold mb-2">Área dos Membros</h1>
-        </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-titans-red/5">
+      <Header />
+      <div className="flex min-h-screen items-center justify-center p-4 pt-24">
+        <div className="w-full max-w-md">
         <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-titans-red to-titans-orange rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="h-8 w-8 text-white" />
+            <div className="mx-auto mb-4 w-28">
+              <img
+                src={bixoTitans.src}
+                alt="Ícone Titans"
+                className="h-full w-full origin-bottom object-contain animate-walk"
+              />
             </div>
             <CardTitle className="text-xl">Login de Membro</CardTitle>
           </CardHeader>
@@ -140,11 +156,16 @@ const Login = () => {
                   </Link>
                 </div>
 
+                {loginError && (
+                  <p className="text-sm text-destructive text-center">{loginError}</p>
+                )}
+
                 <Button
                   type="submit"
+                  disabled={isSubmitting}
                   className="w-full h-11 bg-gradient-to-r from-titans-red to-titans-orange hover:from-titans-red/90 hover:to-titans-orange/90 text-white font-semibold"
                 >
-                  Entrar
+                  {isSubmitting ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
             </Form>
@@ -161,9 +182,10 @@ const Login = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          Área restrita aos membros da equipe
-        </p>
+          <p className="text-center text-xs text-muted-foreground mt-6">
+            Área restrita aos membros da equipe
+          </p>
+        </div>
       </div>
     </div>
   );

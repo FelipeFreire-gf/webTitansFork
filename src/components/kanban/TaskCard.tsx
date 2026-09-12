@@ -14,24 +14,25 @@ export function TaskCard({
   onDragStart,
   onDragEnd,
   dragging,
+  draggable = true,
 }: {
   task: Task;
   onOpen: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   dragging: boolean;
+  draggable?: boolean;
 }) {
   const done = task.subtasks.filter((s) => s.done).length;
   const total = task.subtasks.length;
   const due = formatDueDate(task.dueDate);
-  const danger =
-    task.status !== "concluida" &&
-    (isDueToday(task.dueDate) || isOverdue(task.dueDate));
+  const danger = isDueToday(task.dueDate) || isOverdue(task.dueDate);
 
   return (
     <article
-      draggable
+      draggable={draggable}
       onDragStart={(e) => {
+        if (!draggable) return;
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", task.id);
         onDragStart();

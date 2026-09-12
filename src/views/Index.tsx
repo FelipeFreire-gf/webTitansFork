@@ -159,21 +159,25 @@ const Index = () => {
               <div className="text-muted-foreground">premiações</div>
             </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-titans-orange to-titans-gold rounded-full mx-auto mb-4 flex items-center justify-center">
+            <Link href="/projetos" className="text-center group">
+              <div className="w-16 h-16 bg-gradient-to-br from-titans-orange to-titans-gold rounded-full mx-auto mb-4 flex items-center justify-center transition-transform group-hover:scale-105">
                 <Target className="h-8 w-8 text-white" />
               </div>
-              <div className="text-3xl font-bold text-titans-orange mb-2">Competindo desde</div>
-              <div className="text-muted-foreground">2017</div>
-            </div>
+              <div className="text-3xl font-bold text-titans-orange mb-2 group-hover:underline">
+                Projetos Destaques
+              </div>
+              <div className="text-muted-foreground">veja o que estamos construindo</div>
+            </Link>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-titans-gold to-titans-orange rounded-full mx-auto mb-4 flex items-center justify-center">
+            <Link href="/hall-da-fama" className="text-center group">
+              <div className="w-16 h-16 bg-gradient-to-br from-titans-gold to-titans-orange rounded-full mx-auto mb-4 flex items-center justify-center transition-transform group-hover:scale-105">
                 <Users className="h-8 w-8 text-white" />
               </div>
-              <div className="text-3xl font-bold text-titans-orange mb-2">+ de 35</div>
-              <div className="text-muted-foreground">membros ativos</div>
-            </div>
+              <div className="text-3xl font-bold text-titans-orange mb-2 group-hover:underline">
+                Hall da Fama
+              </div>
+              <div className="text-muted-foreground">conheça os membros de destaque</div>
+            </Link>
 
           </div>
         </div>

@@ -21,7 +21,6 @@ const Header = () => {
     { name: "Modalidades", href: "/#modalidades" },
     { name: "Inscrições", href: "/#inscricoes" },
     { name: "Apoiar", href: "/#apoiar" },
-    { name: "Projetos Destaques", href: "/projetos" },
   ];
 
   const servicos = [
