@@ -150,7 +150,7 @@ function EquipePainelConteudo() {
       <main className="container mx-auto flex flex-1 flex-col px-4 pb-6 pt-6 sm:px-6 lg:px-8">
         <div className="rounded-xl border border-border bg-card/30 p-4 sm:p-6">
           <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-            <nav className="flex gap-2 lg:flex-col">
+            <nav className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = view === item.id;
@@ -159,13 +159,13 @@ function EquipePainelConteudo() {
                     key={item.id}
                     type="button"
                     onClick={() => setView(item.id)}
-                    className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-gradient-to-r from-titans-red to-titans-orange text-white"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 shrink-0" />
                     {item.label}
                   </button>
                 );

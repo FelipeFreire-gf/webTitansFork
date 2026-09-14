@@ -17,22 +17,37 @@ export async function GET() {
   // Mestre cria/edita/remove (ver POST abaixo e as rotas em [userId]/*).
   if (!isLideranca(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
-  const membros = await prisma.user.findMany({
-    orderBy: { nome: "asc" },
-    select: {
-      id: true,
-      nome: true,
-      email: true,
-      role: true,
-      status: true,
-      nivelCarta: true,
-      curso: true,
-      semestre: true,
-      projetos: { select: { id: true, nome: true } },
-    },
-  });
+  const [membros, tokensValidos] = await Promise.all([
+    prisma.user.findMany({
+      orderBy: { nome: "asc" },
+      select: {
+        id: true,
+        nome: true,
+        email: true,
+        role: true,
+        status: true,
+        nivelCarta: true,
+        curso: true,
+        semestre: true,
+        conviteAbertoEm: true,
+        projetos: { select: { id: true, nome: true } },
+      },
+    }),
+    // E-mails com um convite pendente (token ainda não usado nem expirado) —
+    // é o que diferencia "ainda não abriu" de "não há convite em aberto".
+    prisma.verificationToken.findMany({
+      where: { expires: { gt: new Date() } },
+      select: { identifier: true },
+    }),
+  ]);
 
-  return Response.json({ membros });
+  const emailsComConvitePendente = new Set(tokensValidos.map((t) => t.identifier));
+  const membrosComSinal = membros.map((m) => ({
+    ...m,
+    convitePendente: emailsComConvitePendente.has(m.email),
+  }));
+
+  return Response.json({ membros: membrosComSinal });
 }
 
 interface CreateBody {
@@ -110,6 +125,7 @@ export async function POST(req: Request) {
       nivelCarta: true,
       curso: true,
       semestre: true,
+      conviteAbertoEm: true,
       projetos: { select: { id: true, nome: true } },
     },
   });

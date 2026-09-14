@@ -1,8 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { format, parseISO } from "date-fns";
 import { useVisao } from "@/components/equipe/VisaoContext";
-import { Download, KeyRound, Loader2, Mail, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import {
+  Download,
+  KeyRound,
+  Loader2,
+  Mail,
+  MailOpen,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,6 +78,10 @@ interface Membro {
   nivelCarta: NivelCarta | null;
   curso: string | null;
   semestre: number | null;
+  /** Quando o membro abriu o link de definir senha do convite vigente (null = ainda não). */
+  conviteAbertoEm: string | null;
+  /** Se há um convite de senha pendente (token ainda válido) pra esse e-mail. */
+  convitePendente: boolean;
   projetos: Projeto[];
 }
 
@@ -126,22 +141,24 @@ function FormularioMembro({
     e.preventDefault();
     setSaving(true);
     try {
-      const { membro, emailEnviado } = await api<{ membro: Membro; emailEnviado: boolean | null }>(
-        "/api/admin/membros",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            nome,
-            email,
-            role,
-            status,
-            curso: curso || null,
-            semestre: semestre ? Number(semestre) : null,
-            projetoIds,
-          }),
-        },
-      );
-      onCreated(membro);
+      const { membro, emailEnviado } = await api<{
+        membro: Omit<Membro, "convitePendente">;
+        emailEnviado: boolean | null;
+      }>("/api/admin/membros", {
+        method: "POST",
+        body: JSON.stringify({
+          nome,
+          email,
+          role,
+          status,
+          curso: curso || null,
+          semestre: semestre ? Number(semestre) : null,
+          projetoIds,
+        }),
+      });
+      // Esse fluxo sempre gera um convite novo — o token já existe mesmo que
+      // o e-mail em si tenha falhado (dá pra reenviar depois).
+      onCreated({ ...membro, convitePendente: true });
       if (emailEnviado === false) {
         toast.warning("Membro adicionado, mas o e-mail de convite não pôde ser enviado", {
           description: "Verifique a configuração do Resend e reenvie o convite pelo ícone de envelope.",
@@ -330,20 +347,24 @@ function CadastroManualMembro({
 
     setSaving(true);
     try {
-      const { membro } = await api<{ membro: Membro }>("/api/admin/membros", {
-        method: "POST",
-        body: JSON.stringify({
-          nome,
-          email,
-          senha,
-          role,
-          status,
-          curso: curso || null,
-          semestre: semestre ? Number(semestre) : null,
-          projetoIds,
-        }),
-      });
-      onCreated(membro);
+      const { membro } = await api<{ membro: Omit<Membro, "convitePendente"> }>(
+        "/api/admin/membros",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            nome,
+            email,
+            senha,
+            role,
+            status,
+            curso: curso || null,
+            semestre: semestre ? Number(semestre) : null,
+            projetoIds,
+          }),
+        },
+      );
+      // Cadastro manual não gera convite por e-mail, então não há token pendente.
+      onCreated({ ...membro, convitePendente: false });
       toast.success("Membro cadastrado");
       reset();
       setOpen(false);
@@ -547,7 +568,7 @@ function EditarMembroDialog({
 
     setSaving(true);
     try {
-      const { membro: atualizado } = await api<{ membro: Membro }>(
+      const { membro: atualizado } = await api<{ membro: Omit<Membro, "convitePendente"> }>(
         `/api/admin/membros/${membro.id}`,
         {
           method: "PATCH",
@@ -564,7 +585,8 @@ function EditarMembroDialog({
           }),
         },
       );
-      onUpdated(atualizado);
+      // Editar dados não mexe em convite/token — preserva o sinal que já tínhamos.
+      onUpdated({ ...atualizado, convitePendente: membro.convitePendente });
       toast.success("Dados do membro atualizados");
       setOpen(false);
     } catch (err) {
@@ -893,6 +915,13 @@ const AdminMembros = () => {
   async function handleReenviarConvite(id: string) {
     try {
       await api(`/api/admin/membros/${id}/reenviar-convite`, { method: "POST" });
+      // Novo token, ainda não aberto — reflete isso na hora, sem esperar reload.
+      setMembros(
+        (prev) =>
+          prev?.map((m) =>
+            m.id === id ? { ...m, convitePendente: true, conviteAbertoEm: null } : m,
+          ) ?? null,
+      );
       toast.success("Convite reenviado");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao reenviar convite");
@@ -1019,6 +1048,29 @@ const AdminMembros = () => {
                     {isMestre && (
                       <TableCell>
                         <div className="flex items-center gap-1">
+                          {m.convitePendente && (
+                            <span
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center ${
+                                m.conviteAbertoEm
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-muted-foreground/50"
+                              }`}
+                              title={
+                                m.conviteAbertoEm
+                                  ? `Abriu o link de senha em ${format(
+                                      parseISO(m.conviteAbertoEm),
+                                      "dd/MM/yyyy 'às' HH:mm",
+                                    )}`
+                                  : "Convite enviado — ainda não abriu o link de senha"
+                              }
+                            >
+                              {m.conviteAbertoEm ? (
+                                <MailOpen className="h-4 w-4" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                            </span>
+                          )}
                           <EditarMembroDialog
                             membro={m}
                             projetos={projetos}
