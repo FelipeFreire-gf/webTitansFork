@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/select";
 
 const FormularioModelagem = () => {
+  const [enviando, setEnviando] = useState(false);
   const form = useForm<ModelagemFormValues>({
     resolver: zodResolver(modelagemSchema),
     defaultValues: {
@@ -39,12 +41,35 @@ const FormularioModelagem = () => {
   });
 
   async function onSubmit(data: ModelagemFormValues) {
-    // TODO: integrar com backend / EmailJS. Por enquanto o fluxo é só front.
-    console.log("[modelagem] pedido de modelagem 3D:", data);
-    toast.success("Recebemos seu pedido!", {
-      description: "A equipe TITANS entra em contato pelo e-mail ou telefone informado.",
-    });
-    form.reset();
+    setEnviando(true);
+    const toastId = toast.loading("Enviando seu pedido...");
+
+    try {
+      const res = await fetch("/api/servicos/impressao-3d", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "MODELAGEM", ...data }),
+      });
+
+      if (!res.ok) {
+        const corpo = await res.json().catch(() => null);
+        throw new Error(corpo?.error ?? "Falha ao enviar o pedido");
+      }
+
+      toast.success("Recebemos seu pedido!", {
+        id: toastId,
+        description: "A equipe TITANS entra em contato pelo e-mail ou telefone informado.",
+      });
+      form.reset();
+    } catch (err) {
+      console.error("Erro enviando pedido de modelagem:", err);
+      toast.error("Não foi possível enviar seu pedido", {
+        id: toastId,
+        description: "Tente novamente ou fale com a equipe.",
+      });
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -137,8 +162,8 @@ const FormularioModelagem = () => {
           )}
         />
 
-        <Button type="submit" className="w-full sm:w-auto">
-          Enviar pedido de modelagem
+        <Button type="submit" className="w-full sm:w-auto" disabled={enviando}>
+          {enviando ? "Enviando..." : "Enviar pedido de modelagem"}
         </Button>
       </form>
     </Form>

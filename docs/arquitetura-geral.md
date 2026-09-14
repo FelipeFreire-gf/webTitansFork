@@ -37,11 +37,19 @@ no **Supabase** (Postgres + Storage + Realtime). A impressão física acontece n
             │ anon key                    │ service_role / MP secrets   │ service_role
             ▼                             ▼                             ▼
        ┌───────────────────────────────────────────────────────────────────────────┐
-       │                              SUPABASE                                       │
+       │                    SUPABASE — projeto IMPRESSORA (legado)                  │
        │  Postgres: fila_impressao, config_precos, impressora_status, chamados_ajuda,│
        │            reimpressao_tokens, reimpressoes  (+ RLS, Realtime, pg_cron)     │
        │  Storage:  bucket privado `pdfs-impressao`                                   │
        │  Edge Function: cleanup-fila (retenção, horária)                            │
+       └───────────────────────────────────────────────────────────────────────────┘
+
+       ┌───────────────────────────────────────────────────────────────────────────┐
+       │                    SUPABASE — projeto TITANS (separado)                    │
+       │  Postgres: pedidos_3d (+ RLS) — via PRISMA (DATABASE_URL/DIRECT_URL),       │
+       │            mesmo projeto/banco usado pelo login/membros (seção 8.1)         │
+       │  Storage:  bucket privado `arquivos-3d` — via supabase-js (chave            │
+       │            publishable), upload direto do navegador                        │
        └───────────────────────────────────────────────────────────────────────────┘
                                           ▲
                                           │ webhook assinado (HMAC)
@@ -107,8 +115,8 @@ diretamente** — coordenam-se pela coluna `fila_impressao.status`.
 
 | Componente | Papel |
 | --- | --- |
-| **Postgres** | Tabelas da fila de impressão, preços, status da impressora, chamados, tokens e auditoria de reimpressão |
-| **Storage** | Bucket privado `pdfs-impressao` (só `application/pdf`, ≤ 30 MB) |
+| **Postgres** | **Dois projetos Supabase separados** — IMPRESSORA: fila de impressão, preços, status da impressora, chamados, tokens e auditoria de reimpressão, acessados via `supabase-js` (legado, sem acesso da equipe atual). TITANS: `pedidos_3d`, acessada via **Prisma** — mesmo Postgres usado pelo login/membros |
+| **Storage** | Bucket `pdfs-impressao` (projeto IMPRESSORA, só `application/pdf`, ≤ 30 MB, via `supabase-js`) e bucket `arquivos-3d` (projeto TITANS, `.stl`/`.step` + fotos, ≤ 50 MB, via `supabase-js` — Prisma não gerencia Storage) |
 | **Row Level Security (RLS)** | Isola o cliente anônimo; `service_role` bypassa |
 | **Realtime** | Publica mudanças de `fila_impressao` e `impressora_status` para o cliente/kiosk |
 | **Edge Functions (Deno)** | `cleanup-fila` — retenção de dados |
@@ -237,10 +245,37 @@ Não persiste nada localmente nem no Supabase — o e-mail é o único registro.
 
 ### 4.4 Serviço de impressão 3D (`/servicos/impressao-3d`)
 
-Dois formulários (`src/lib/impressao-3d-schema.ts`): "Preciso de modelagem" e "Já
-tenho os arquivos". Captação de leads (nome, e-mail, telefone, origem do
-contato). *(Verificar destino do envio no componente de formulário —
-`src/components/servicos/*`.)*
+Dois formulários (`src/lib/impressao-3d-schema.ts`, componentes em
+`src/components/servicos/`): "Preciso de modelagem" (`FormularioModelagem`) e
+"Já tenho os arquivos" (`FormularioArquivos`). Captação de leads — nome,
+e-mail, telefone, origem do contato, mais o que for específico do tipo.
+
+Fluxo de envio (mesmo padrão do PDF em `pdfs-impressao` — upload direto do
+navegador pro Storage —, sem pagamento; a persistência é via **Prisma**, não
+`supabase-js`):
+
+1. `FormularioArquivos` sobe os `.stl`/`.step` e as fotos direto pro bucket
+   privado `arquivos-3d` do projeto Supabase TITANS (client-side, `anon`, via
+   `src/lib/supabase-titans.ts`), sob `<uuid>/modelos/<nome>` e
+   `<uuid>/fotos/<nome>`.
+2. Ambos os formulários enviam os campos (+ os caminhos dos arquivos, quando
+   houver) para `POST /api/servicos/impressao-3d`.
+3. A Route Handler valida com Zod (`src/lib/server/pedidos-3d-schema.ts`),
+   grava em `pedidos_3d` via **Prisma** (`prisma.pedidoImpressao3D.create`,
+   `src/lib/server/prisma.ts`) e dispara, em paralelo e best-effort, um aviso
+   no Telegram (`TELEGRAM_CHAT_ID`) e um e-mail pra equipe
+   (`PEDIDOS_3D_EMAIL_EQUIPE`, via Resend — `src/lib/server/email.ts`).
+4. Para pedidos `ARQUIVOS`, o e-mail **anexa os arquivos**: a Route Handler
+   baixa de volta os objetos do bucket `arquivos-3d` (chave secreta,
+   `src/lib/server/supabase-admin-titans.ts`) e anexa via Resend. Se a soma
+   dos arquivos passar de 20 MB (margem de segurança sob o teto de ~40 MB do
+   Resend, que já inclui a inflação do base64) ou algum download falhar, o
+   e-mail sai sem anexo, só com os caminhos no bucket — nunca bloqueia o envio
+   nem a resposta ao cliente.
+
+Sem orçamento automático: `qualidade` é texto livre e a equipe cota
+manualmente a partir dos arquivos (ver seção 7.8 para o schema completo e a
+seção 9 para a evolução de fatiamento automático).
 
 ### 4.5 Quadro Kanban de tarefas (`/equipe/tarefas`)
 
@@ -439,12 +474,20 @@ Detalhe por tabela na §7. Resumo do que o cliente `anon` pode:
   UUID opaco na query). **Sem** `UPDATE`/`DELETE`.
 - **`config_precos`**: só `SELECT`.
 - **`impressora_status`**: só `SELECT`.
-- **`chamados_ajuda`, `reimpressao_tokens`, `reimpressoes`**: RLS habilitado
-  **sem nenhuma policy** → todo acesso `anon` negado; só `service_role` (Route
-  Handlers) entra.
+- **`chamados_ajuda`, `reimpressao_tokens`, `reimpressoes`** (projeto
+  IMPRESSORA): RLS habilitado **sem nenhuma policy** → todo acesso `anon`
+  negado; só `service_role` (Route Handlers) entra.
+- **`pedidos_3d`** (projeto TITANS): RLS habilitado **sem nenhuma policy** →
+  bloqueia o Data API do Supabase (`anon`/`authenticated`) por padrão. Na
+  prática irrelevante para o acesso normal: só a conexão do **Prisma**
+  (`DATABASE_URL`, dona da tabela) lê/escreve, e RLS não se aplica ao dono —
+  é defesa em profundidade contra alguém habilitar o Data API nesta tabela.
 - **Storage `pdfs-impressao`**: `anon` só `INSERT` (upload); `SELECT`/`UPDATE`/
   `DELETE` negados. Bucket privado, `allowed_mime_types = ['application/pdf']`,
   `file_size_limit = 30 MB` — impostos pelo próprio Storage.
+- **Storage `arquivos-3d`**: mesma política (`anon` só `INSERT`). Bucket
+  privado, sem `allowed_mime_types` (MIME de `.stl`/`.step` é inconsistente no
+  navegador), `file_size_limit = 50 MB`.
 
 **Risco conhecido aceito**: a policy de `SELECT` de `fila_impressao` é permissiva
 (`using (true)`). A auditoria concluiu que um UUID v4 é inviável de enumerar; um
@@ -466,6 +509,19 @@ comparação explícita (`x.ok === false`). Essa convenção é seguida em todo
 continua em UTC). **Extensões**: `pgcrypto` (0001), `pg_cron` + `pg_net` (0002).
 Migrations em `supabase/migrations/0001…0012`.
 
+> **Dois projetos Supabase distintos.** As tabelas abaixo (7.2–7.7, 7.9, view
+> `fila_publica`, bucket `pdfs-impressao`) vivem no projeto **IMPRESSORA**
+> (legado, sem acesso da equipe atual), acessadas via `supabase-js`. `pedidos_3d`
+> (7.8) vive no projeto **TITANS** separado — o mesmo Postgres do
+> `DATABASE_URL`/`DIRECT_URL` usados pelo Prisma para login/membros — e é
+> gerenciada como qualquer outro model do Prisma: schema em
+> `prisma/schema.prisma`, migrations em `prisma/migrations/`
+> (`20260914105636_add_pedidos_3d` + `20260914105714_pedidos_3d_constraints`,
+> esta última com o que o Prisma não expressa: `CHECK`s, `ENABLE ROW LEVEL
+> SECURITY` e o bucket de Storage). O bucket `arquivos-3d` (Storage, fora do
+> alcance do Prisma) vive no mesmo projeto TITANS mas é acessado via
+> `supabase-js` (`src/lib/supabase-titans.ts`, só a chave `publishable`).
+
 ### 7.1 Diagrama de relacionamentos (lógico)
 
 ```
@@ -484,6 +540,10 @@ config_precos ──(modo_cor, leitura no create-pix e no checkout)──┐
    impressora_status (PK fila text)  ──► view impressora_status_publica (idade_ms)
    chamados_ajuda (PK id uuid, protocolo opcional — texto, sem FK)
    Storage: bucket pdfs-impressao  ◄── fila_impressao.pdf_path (caminho <uuid>/<nome>.pdf)
+
+   ── projeto Supabase TITANS (separado, ver nota acima) ──────────────────────
+   pedidos_3d (PK id uuid — standalone; via Prisma, não supabase-js)
+   Storage: bucket arquivos-3d    ◄── pedidos_3d.modelos_paths / .fotos_paths
 ```
 
 > As tabelas de reimpressão referenciam `fila_impressao.id` **logicamente, sem
@@ -626,7 +686,55 @@ Auditoria **append-only** de toda reimpressão bem-sucedida. Introduzida em 0011
 
 ---
 
-### 7.8 Views
+### 7.8 Tabela `pedidos_3d`
+
+> Vive no projeto Supabase **TITANS** (separado do resto desta seção — ver nota
+> no início da seção 7). Gerenciada via **Prisma** (`model PedidoImpressao3D`
+> em `prisma/schema.prisma`), não `supabase-js`.
+
+Leads do serviço de impressão 3D (`/servicos/impressao-3d`): os dois
+formulários da página (ARQUIVOS e MODELAGEM) gravam aqui via
+`prisma.pedidoImpressao3D.create`. Introduzida em
+`prisma/migrations/20260914105636_add_pedidos_3d/` (tabela/enums/índices,
+gerada pelo Prisma) + `.../20260914105714_pedidos_3d_constraints/` (`CHECK`s,
+RLS e o bucket de Storage, escritos à mão — fora do que o Prisma schema
+expressa; mesmo padrão do seed de `tipos_evento` em
+`20260911222310_add_calendario_avisos`).
+
+| Coluna | Tipo | Nulo? | Default | Descrição |
+| --- | --- | :---: | --- | --- |
+| `id` | `uuid` | não | gerado no client (Prisma `@default(uuid())`) | **PK**. Sem `DEFAULT` no Postgres — diferente de `fila_impressao.id` (`gen_random_uuid()`). Os 8 primeiros chars viram o protocolo (`id.slice(0,8).toUpperCase()`), calculado na Route Handler. |
+| `created_at` | `timestamptz` | não | `now()` (Prisma `@default(now())`) | — |
+| `tipo` | `tipo_pedido_3d` (enum) | não | — | `'ARQUIVOS' \| 'MODELAGEM'`. |
+| `nome`, `email`, `telefone`, `origem` | `text` | não | — | Comuns aos dois formulários. |
+| `qualidade` | `text` | sim | — | Só `ARQUIVOS`. Texto livre (ex.: "padrão", "1,75 mm"). |
+| `descricao` | `text` | sim | — | Só `MODELAGEM`. `CHECK` (migration 105714): obrigatório quando `tipo = 'MODELAGEM'`. |
+| `observacoes` | `text` | sim | — | Só `ARQUIVOS`, opcional. |
+| `modelos_paths`, `fotos_paths` | `text[]` | não | `ARRAY[]::TEXT[]` | Caminhos no bucket `arquivos-3d`. `CHECK` (migration 105714): ambos com pelo menos 1 item quando `tipo = 'ARQUIVOS'`. |
+| `status` | `status_pedido_3d` (enum) | não | `'RECEBIDO'` | `'RECEBIDO' \| 'CONTATADO' \| 'CONCLUIDO' \| 'CANCELADO'`. Atualização manual pela equipe (sem UI própria ainda). |
+| `contatado_em` | `timestamptz` | sim | — | Não preenchido automaticamente. |
+
+**Índices**: `pedidos_3d_status_idx`, `pedidos_3d_tipo_idx`.
+**RLS**: habilitado **sem policy** (migration 105714) → bloqueia o Data API do
+Supabase por padrão; na prática irrelevante, porque só a conexão do Prisma
+(`DATABASE_URL`, dona da tabela) lê/escreve — RLS não se aplica ao dono. O
+navegador nunca insere a linha diretamente — só sobe os arquivos pro Storage
+antes da chamada a `/api/servicos/impressao-3d`.
+**Notificação**: a Route Handler dispara, em paralelo, um aviso no Telegram
+(`TELEGRAM_CHAT_ID`) e um e-mail pra equipe (`PEDIDOS_3D_EMAIL_EQUIPE`, via
+Resend — mesmo provedor do convite de membro em `src/lib/server/email.ts`) a
+cada novo pedido, ambos best-effort (mesmo padrão de
+`chamados_ajuda`/`/api/kiosk/help`) — a persistência nunca falha por causa da
+notificação. O e-mail de pedidos `ARQUIVOS` anexa os arquivos do bucket
+`arquivos-3d` (até 20 MB somados; acima disso, só os caminhos).
+**Sem automação de orçamento**: `qualidade`/dimensões não geram preço nem
+tempo de impressão automaticamente; a equipe cota manualmente a partir dos
+arquivos. Fatiamento automático (ex.: PrusaSlicer/OrcaSlicer CLI na sede) fica
+como evolução futura (ver seção 9).
+
+---
+
+### 7.9 Views
 
 #### `fila_publica` (0008, ampliada em 0010)
 
@@ -657,7 +765,9 @@ para o cliente nunca comparar timestamps contra o próprio relógio.
 
 ---
 
-### 7.9 Storage — bucket `pdfs-impressao`
+### 7.10 Storage — buckets
+
+#### `pdfs-impressao`
 
 | Propriedade | Valor |
 | --- | --- |
@@ -670,9 +780,24 @@ para o cliente nunca comparar timestamps contra o próprio relógio.
 Layout dos objetos: `<uuid-do-pedido>/<nome-sanitizado>.pdf` (ou
 `pedido-<N>-arquivos.pdf` quando houve mesclagem).
 
+#### `arquivos-3d` (projeto Supabase TITANS — separado, criado em `prisma/migrations/20260914105714_pedidos_3d_constraints`)
+
+| Propriedade | Valor |
+| --- | --- |
+| `public` | `false` |
+| `allowed_mime_types` | Sem restrição — navegadores reportam MIME inconsistente (ou vazio) para `.stl`/`.step`; o `accept` do `<input>` filtra no cliente e a equipe revisa manualmente. |
+| `file_size_limit` | `52428800` bytes = 50 MB |
+| Policy `arquivos_3d_anon_insert` | `anon` só `INSERT` (`bucket_id = 'arquivos-3d'`) |
+| `SELECT` / `UPDATE` / `DELETE` | Sem policy → negados ao `anon`. Ninguém lê de volta pelo Data API por enquanto (não há chave `service_role`/secreta configurada para este projeto — a persistência dos metadados é via Prisma). |
+
+Layout dos objetos: `<uuid-do-pedido>/modelos/<nome-sanitizado>` e
+`<uuid-do-pedido>/fotos/<nome-sanitizado>` — o navegador sobe direto pro
+Storage (anon) e só então envia os caminhos pra `/api/servicos/impressao-3d`,
+que valida o formato do caminho antes de gravar em `pedidos_3d`.
+
 ---
 
-### 7.10 Automação no banco
+### 7.11 Automação no banco
 
 | Objeto | Definição | Função |
 | --- | --- | --- |
@@ -689,8 +814,10 @@ Layout dos objetos: `<uuid-do-pedido>/<nome-sanitizado>.pdf` (ou
 **Cliente (`.env.local`, prefixo `NEXT_PUBLIC_`)** — empacotadas no bundle:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
+NEXT_PUBLIC_SUPABASE_URL                  # projeto IMPRESSORA
+NEXT_PUBLIC_SUPABASE_ANON_KEY             # projeto IMPRESSORA
+NEXT_PUBLIC_SUPABASE_TITANS_URL           # projeto TITANS (separado)
+NEXT_PUBLIC_SUPABASE_TITANS_PUBLISHABLE_KEY
 NEXT_PUBLIC_TELEGRAM_HELP_INVITE_URL      # opcional (botão Telegram no kiosk)
 NEXT_PUBLIC_EMAILJS_SERVICE_ID
 NEXT_PUBLIC_EMAILJS_TEMPLATE_ID
@@ -700,8 +827,15 @@ NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
 **Servidor (Vercel Project Settings — sem `NEXT_PUBLIC_`)**:
 
 ```
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_URL                              # projeto IMPRESSORA
+SUPABASE_SERVICE_ROLE_KEY                 # projeto IMPRESSORA
+DATABASE_URL                              # projeto TITANS (Prisma, pooler transação) — ver seção "CAMADA TITANS"
+DIRECT_URL                                # projeto TITANS (Prisma CLI/migrate, pooler sessão)
+SUPABASE_TITANS_URL                       # projeto TITANS — só Storage (bucket arquivos-3d)
+SUPABASE_TITANS_SECRET_KEY                # idem — baixa os arquivos pra anexar no e-mail de aviso
+RESEND_API_KEY                            # e-mails (convite de membro + aviso de pedidos_3d)
+RESEND_FROM_EMAIL                         # opcional — remetente; sem ela usa onboarding@resend.dev
+PEDIDOS_3D_EMAIL_EQUIPE                   # opcional — destino do aviso de novo pedido 3D
 MERCADOPAGO_ACCESS_TOKEN
 MERCADOPAGO_WEBHOOK_SECRET
 TELEGRAM_BOT_TOKEN                        # opcional (notificações)
@@ -729,7 +863,8 @@ REACHABILITY_TIMEOUT=3  LP_OPTIONS=fit-to-page
 | Alvo | Como |
 | --- | --- |
 | Site + API | Push para `main` → Vercel build (`next build`, output standalone) |
-| Migrations | `supabase db push` ou SQL Editor, na ordem `0001…0012` |
+| Migrations (IMPRESSORA) | `supabase db push` ou SQL Editor do projeto legado, na ordem `0001…0012` |
+| Migrations (TITANS) | `npx prisma migrate deploy --config prisma7.config.ts` — inclui `pedidos_3d` junto com as demais tabelas (`prisma/migrations/`) |
 | Edge Function | `supabase functions deploy cleanup-fila` + `supabase secrets set CLEANUP_FUNCTION_SECRET=…` + agendar (0003) |
 | Worker | `git pull` / `cp worker.py` em `/opt/print-worker` + `systemctl restart print-worker` |
 | Kiosk | Só `git push` da UI; a Pi renderiza a Vercel. Provisionamento manual — ver [`docs/web-to-print/kiosk.md`](web-to-print/kiosk.md) |
@@ -752,7 +887,7 @@ Em `push`/`pull_request` para `main`, `ubuntu-latest`, Node 22:
 | Login / área de membros | Stub (só `console.log`) — falta autenticação (provável Supabase Auth) |
 | Inscrição no processo seletivo | Stub — falta persistência |
 | Kanban de tarefas | V1 em memória — falta tabela `tarefas` + realtime |
-| Formulário de impressão 3D | Captação por formulário — verificar destino do envio |
+| Formulário de impressão 3D | Captação persistida (`pedidos_3d`) + aviso no Telegram e por e-mail (com anexo dos arquivos) — orçamento (tempo/gramas de filamento) ainda é manual, sem fatiamento automático (ex.: PrusaSlicer/OrcaSlicer CLI na sede) |
 | Feedback | Só e-mail (EmailJS), sem histórico consultável |
 | Modo `COLORIDO` no checkout | Ainda aparece na UI, mas a HP Laser 135w é monocromática (sai em cinza, com aviso no log do worker) |
 | Policy `SELECT` de `fila_impressao` | Permissiva (`using (true)`) — risco aceito; token de leitura separado da PK fica como evolução |

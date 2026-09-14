@@ -11,6 +11,7 @@ import {
   ORIGENS_CONTATO,
 } from "@/lib/impressao-3d-schema";
 import { cn } from "@/lib/utils";
+import { supabaseTitans } from "@/lib/supabase-titans";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,11 +33,35 @@ import {
 
 const MODELOS_ACEITOS = ".stl,.step,.stp";
 const FOTOS_ACEITAS = "image/*";
+const BUCKET = "arquivos-3d";
+
+// Sobe cada arquivo pro bucket privado sob "<pastaId>/<subpasta>/<nome>" e
+// devolve os caminhos gravados — a mesma convenção usada pelo Projeto
+// Impressão para o PDF (ver src/views/Impressao.tsx).
+async function subirArquivos(
+  pastaId: string,
+  subpasta: "modelos" | "fotos",
+  arquivos: File[],
+): Promise<string[]> {
+  const paths: string[] = [];
+  for (const file of arquivos) {
+    const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
+    const path = `${pastaId}/${subpasta}/${safeName}`;
+    const { error } = await supabaseTitans.storage.from(BUCKET).upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (error) throw error;
+    paths.push(path);
+  }
+  return paths;
+}
 
 const FormularioArquivos = () => {
   const [modelos, setModelos] = useState<File[]>([]);
   const [fotos, setFotos] = useState<File[]>([]);
   const [erroArquivos, setErroArquivos] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
   const modelosRef = useRef<HTMLInputElement>(null);
   const fotosRef = useRef<HTMLInputElement>(null);
 
@@ -85,20 +110,54 @@ const FormularioArquivos = () => {
       return;
     }
 
-    // TODO: integrar com backend / upload. Por enquanto o fluxo é só front.
-    console.log("[arquivos] pedido com arquivos prontos:", {
-      ...data,
-      qualidade: data.qualidade || "padrão (1,75 mm)",
-      modelos: modelos.map((f) => f.name),
-      fotos: fotos.map((f) => f.name),
-    });
+    setErroArquivos(null);
+    setEnviando(true);
+    const toastId = toast.loading("Enviando arquivos...");
 
-    toast.success("Arquivos recebidos!", {
-      description: "A equipe TITANS analisa os modelos e entra em contato com você.",
-    });
-    form.reset();
-    setModelos([]);
-    setFotos([]);
+    try {
+      const pastaId = crypto.randomUUID();
+      const [modelosPaths, fotosPaths] = await Promise.all([
+        subirArquivos(pastaId, "modelos", modelos),
+        subirArquivos(pastaId, "fotos", fotos),
+      ]);
+
+      const res = await fetch("/api/servicos/impressao-3d", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tipo: "ARQUIVOS",
+          nome: data.nome,
+          email: data.email,
+          telefone: data.telefone,
+          origem: data.origem,
+          qualidade: data.qualidade,
+          observacoes: data.observacoes,
+          modelosPaths,
+          fotosPaths,
+        }),
+      });
+
+      if (!res.ok) {
+        const corpo = await res.json().catch(() => null);
+        throw new Error(corpo?.error ?? "Falha ao enviar o pedido");
+      }
+
+      toast.success("Arquivos recebidos!", {
+        id: toastId,
+        description: "A equipe TITANS analisa os modelos e entra em contato com você.",
+      });
+      form.reset();
+      setModelos([]);
+      setFotos([]);
+    } catch (err) {
+      console.error("Erro enviando pedido 3D:", err);
+      toast.error("Não foi possível enviar seu pedido", {
+        id: toastId,
+        description: "Tente novamente ou fale com a equipe.",
+      });
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -241,8 +300,8 @@ const FormularioArquivos = () => {
           )}
         />
 
-        <Button type="submit" className="w-full sm:w-auto">
-          Enviar arquivos
+        <Button type="submit" className="w-full sm:w-auto" disabled={enviando}>
+          {enviando ? "Enviando..." : "Enviar arquivos"}
         </Button>
       </form>
     </Form>

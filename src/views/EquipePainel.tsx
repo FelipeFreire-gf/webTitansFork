@@ -99,34 +99,46 @@ function EquipeHeader({
 
 function EquipePainelConteudo() {
   const { data: session } = useSession();
-  const { isMestre } = useVisao();
+  const { isLideranca } = useVisao();
   const [view, setView] = useState<PainelView>("avisos");
   const [projetos, setProjetos] = useState<ProjetoResumo[] | null>(null);
+  const [meusProjetos, setMeusProjetos] = useState<ProjetoResumo[] | null>(null);
   const [projetoId, setProjetoId] = useState<string | null>(null);
 
-  const projetoAtualNome = projetos?.find((p) => p.id === projetoId)?.nome ?? null;
+  // "Projeto atual" no header é sempre o(s) projeto(s) do próprio membro logado
+  // — nunca o primeiro da lista geral (que antes fazia parecer que todo mundo
+  // era do Marketing, só por vir primeiro em ordem alfabética).
+  const projetoAtualNome = meusProjetos?.[0]?.nome ?? null;
 
   useEffect(() => {
-    fetch("/api/projetos")
-      .then((r) => r.json())
-      .then((data: { projetos: ProjetoResumo[] }) => {
-        setProjetos(data.projetos);
-        setProjetoId((prev) => prev ?? data.projetos[0]?.id ?? null);
+    Promise.all([
+      fetch("/api/projetos").then((r) => r.json()) as Promise<{ projetos: ProjetoResumo[] }>,
+      fetch("/api/perfil").then((r) => r.json()) as Promise<{ projetos: ProjetoResumo[] }>,
+    ])
+      .then(([todos, meu]) => {
+        setProjetos(todos.projetos);
+        setMeusProjetos(meu.projetos);
+        // Aba "Tarefas" abre no projeto do próprio membro, se ele tiver um;
+        // senão cai no primeiro projeto geral (ex.: membro ainda sem projeto).
+        setProjetoId((prev) => prev ?? meu.projetos[0]?.id ?? todos.projetos[0]?.id ?? null);
       })
-      .catch(() => setProjetos([]));
+      .catch(() => {
+        setProjetos([]);
+        setMeusProjetos([]);
+      });
   }, []);
 
-  // Se a pré-visualização tirar o acesso à aba atual (ex.: "Membros" vendo como Capitão), volta pra uma aba visível.
+  // Se a pré-visualização tirar o acesso à aba atual (ex.: "Membros" vendo como Membro), volta pra uma aba visível.
   useEffect(() => {
-    if (view === "membros" && !isMestre) setView("avisos");
-  }, [view, isMestre]);
+    if (view === "membros" && !isLideranca) setView("avisos");
+  }, [view, isLideranca]);
 
   const navItems = [
     { id: "avisos" as const, label: "Avisos Gerais", icon: Megaphone },
     { id: "calendario" as const, label: "Calendário", icon: CalendarDays },
     { id: "presencas" as const, label: "Presenças", icon: ClipboardCheck },
     { id: "tarefas" as const, label: "Quadro de Tarefas", icon: KanbanSquare },
-    ...(isMestre
+    ...(isLideranca
       ? [{ id: "membros" as const, label: "Gerenciar Membros", icon: Users2 }]
       : []),
   ];
@@ -190,7 +202,7 @@ function EquipePainelConteudo() {
                 </div>
               )}
 
-              {view === "membros" && isMestre && <AdminMembros />}
+              {view === "membros" && isLideranca && <AdminMembros />}
             </div>
           </div>
         </div>

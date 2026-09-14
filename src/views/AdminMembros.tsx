@@ -126,20 +126,29 @@ function FormularioMembro({
     e.preventDefault();
     setSaving(true);
     try {
-      const { membro } = await api<{ membro: Membro }>("/api/admin/membros", {
-        method: "POST",
-        body: JSON.stringify({
-          nome,
-          email,
-          role,
-          status,
-          curso: curso || null,
-          semestre: semestre ? Number(semestre) : null,
-          projetoIds,
-        }),
-      });
+      const { membro, emailEnviado } = await api<{ membro: Membro; emailEnviado: boolean | null }>(
+        "/api/admin/membros",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            nome,
+            email,
+            role,
+            status,
+            curso: curso || null,
+            semestre: semestre ? Number(semestre) : null,
+            projetoIds,
+          }),
+        },
+      );
       onCreated(membro);
-      toast.success("Membro adicionado");
+      if (emailEnviado === false) {
+        toast.warning("Membro adicionado, mas o e-mail de convite não pôde ser enviado", {
+          description: "Verifique a configuração do Resend e reenvie o convite pelo ícone de envelope.",
+        });
+      } else {
+        toast.success("Membro adicionado");
+      }
       reset();
       setOpen(false);
     } catch (err) {
@@ -929,24 +938,30 @@ const AdminMembros = () => {
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <div>
           <CardTitle>Gerenciar Membros</CardTitle>
-          <CardDescription>Cadastre membros manualmente ou importe vários de uma vez.</CardDescription>
+          <CardDescription>
+            {isMestre
+              ? "Cadastre membros manualmente ou importe vários de uma vez."
+              : "Consulta ao quadro de membros — só o Mestre cadastra, edita ou remove."}
+          </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={handleExportar} disabled={!membros?.length}>
             <Download className="mr-2 h-4 w-4" />
             Baixar .txt
           </Button>
-          <ImportarTxt onImported={carregar} />
           {isMestre && (
-            <CadastroManualMembro
-              projetos={projetos}
-              onCreated={(membro) => setMembros((prev) => [...(prev ?? []), membro])}
-            />
+            <>
+              <ImportarTxt onImported={carregar} />
+              <CadastroManualMembro
+                projetos={projetos}
+                onCreated={(membro) => setMembros((prev) => [...(prev ?? []), membro])}
+              />
+              <FormularioMembro
+                projetos={projetos}
+                onCreated={(membro) => setMembros((prev) => [...(prev ?? []), membro])}
+              />
+            </>
           )}
-          <FormularioMembro
-            projetos={projetos}
-            onCreated={(membro) => setMembros((prev) => [...(prev ?? []), membro])}
-          />
         </div>
       </CardHeader>
       <CardContent>
@@ -967,7 +982,7 @@ const AdminMembros = () => {
                   <TableHead>Nível</TableHead>
                   <TableHead>Curso / Semestre</TableHead>
                   <TableHead>Projetos</TableHead>
-                  <TableHead className="w-10" />
+                  {isMestre && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1001,38 +1016,40 @@ const AdminMembros = () => {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <EditarMembroDialog
-                          membro={m}
-                          projetos={projetos}
-                          onUpdated={(atualizado) =>
-                            setMembros((prev) =>
-                              prev?.map((x) => (x.id === atualizado.id ? atualizado : x)) ?? null,
-                            )
-                          }
-                        />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground"
-                          onClick={() => handleReenviarConvite(m.id)}
-                          aria-label={`Reenviar convite para ${m.nome ?? m.email}`}
-                          title="Reenviar convite de senha"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDelete(m.id)}
-                          aria-label={`Remover ${m.nome ?? m.email}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {isMestre && (
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <EditarMembroDialog
+                            membro={m}
+                            projetos={projetos}
+                            onUpdated={(atualizado) =>
+                              setMembros((prev) =>
+                                prev?.map((x) => (x.id === atualizado.id ? atualizado : x)) ?? null,
+                              )
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground"
+                            onClick={() => handleReenviarConvite(m.id)}
+                            aria-label={`Reenviar convite para ${m.nome ?? m.email}`}
+                            title="Reenviar convite de senha"
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDelete(m.id)}
+                            aria-label={`Remover ${m.nome ?? m.email}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

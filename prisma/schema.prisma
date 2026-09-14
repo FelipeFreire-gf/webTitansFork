@@ -299,6 +299,50 @@ model Aviso {
   @@map("avisos")
 }
 
+enum TipoPedido3D {
+  ARQUIVOS
+  MODELAGEM
+
+  @@map("tipo_pedido_3d")
+}
+
+enum StatusPedido3D {
+  RECEBIDO
+  CONTATADO
+  CONCLUIDO
+  CANCELADO
+
+  @@map("status_pedido_3d")
+}
+
+// Leads do serviço de impressão 3D (/servicos/impressao-3d): os dois
+// formulários da página (ARQUIVOS e MODELAGEM) gravam aqui via
+// app/api/servicos/impressao-3d. Os arquivos (.stl/.step + fotos) ficam no
+// bucket `arquivos-3d` do Storage deste mesmo projeto Supabase — só os
+// caminhos são gravados aqui. RLS, o CHECK de completude por tipo e a policy
+// do bucket são adicionados à mão na migration (fora do que o Prisma consegue
+// expressar no schema — mesmo padrão do seed de tipos_evento).
+model PedidoImpressao3D {
+  id           String         @id @default(uuid()) @db.Uuid
+  createdAt    DateTime       @default(now()) @map("created_at")
+  tipo         TipoPedido3D
+  nome         String
+  email        String
+  telefone     String
+  origem       String
+  qualidade    String? // Só ARQUIVOS: texto livre (ex.: "padrão", "1,75 mm").
+  descricao    String? // Só MODELAGEM.
+  observacoes  String? // Só ARQUIVOS, opcional.
+  modelosPaths String[]       @default([]) @map("modelos_paths")
+  fotosPaths   String[]       @default([]) @map("fotos_paths")
+  status       StatusPedido3D @default(RECEBIDO)
+  contatadoEm  DateTime?      @map("contatado_em")
+
+  @@index([status])
+  @@index([tipo])
+  @@map("pedidos_3d")
+}
+
 // Tabelas exigidas pelo Auth.js (NextAuth v5) para sessão em banco via PrismaAdapter.
 // https://authjs.dev/getting-started/adapters/prisma
 model Account {

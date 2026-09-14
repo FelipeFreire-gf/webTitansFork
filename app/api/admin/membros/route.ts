@@ -1,6 +1,6 @@
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
-import { isMestre, gerarSenhaPlaceholder, hashSenha } from "@/lib/server/admin";
+import { isMestre, isLideranca, gerarSenhaPlaceholder, hashSenha } from "@/lib/server/admin";
 import { enviarConviteDeSenha } from "@/lib/server/convite";
 import { ROLE_ORDER } from "@/lib/roles";
 import { STATUS_MEMBRO_ORDER } from "@/lib/statusMembro";
@@ -13,7 +13,9 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await auth();
   if (!session) return Response.json({ error: "Não autenticado" }, { status: 401 });
-  if (!isMestre(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
+  // Capitão e Vice-Capitão também podem consultar o quadro de membros — só o
+  // Mestre cria/edita/remove (ver POST abaixo e as rotas em [userId]/*).
+  if (!isLideranca(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
   const membros = await prisma.user.findMany({
     orderBy: { nome: "asc" },
@@ -113,9 +115,7 @@ export async function POST(req: Request) {
   });
 
   // Cadastro manual: o MESTRE já definiu a senha, não faz sentido mandar convite pra criar outra.
-  if (!senhaManual) {
-    await enviarConviteDeSenha(email, nome);
-  }
+  const emailEnviado = senhaManual ? null : await enviarConviteDeSenha(email, nome);
 
-  return Response.json({ membro }, { status: 201 });
+  return Response.json({ membro, emailEnviado }, { status: 201 });
 }

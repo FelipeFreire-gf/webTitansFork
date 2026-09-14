@@ -17,6 +17,7 @@ export async function enviarEmail(args: {
   to: string;
   subject: string;
   html: string;
+  attachments?: { filename: string; content: Buffer }[];
 }): Promise<boolean> {
   const resend = getClient();
   if (!resend) {
@@ -32,6 +33,7 @@ export async function enviarEmail(args: {
       to: args.to,
       subject: args.subject,
       html: args.html,
+      attachments: args.attachments,
     });
     if (error) {
       console.error("Resend recusou o envio:", error);

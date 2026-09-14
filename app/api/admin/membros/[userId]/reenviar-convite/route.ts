@@ -21,6 +21,16 @@ export async function POST(
   });
   if (!membro) return Response.json({ error: "Membro não encontrado" }, { status: 404 });
 
-  await enviarConviteDeSenha(membro.email, membro.nome);
+  const enviado = await enviarConviteDeSenha(membro.email, membro.nome);
+  if (!enviado) {
+    return Response.json(
+      {
+        error:
+          "Não foi possível enviar o e-mail. Verifique a configuração do Resend (RESEND_API_KEY e domínio verificado em resend.com/domains).",
+      },
+      { status: 502 }
+    );
+  }
+
   return Response.json({ ok: true });
 }

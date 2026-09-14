@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { KeyRound } from "lucide-react";
 
 import { definirSenhaSchema, DefinirSenhaFormValues } from "@/lib/definir-senha-schema";
+import bixoTitans from "@/assets/bixoTitansS.png";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,8 +60,12 @@ const DefinirSenha = ({ token }: { token: string | null }) => {
       <div className="w-full max-w-md">
         <Card className="shadow-xl border-0 bg-card/80 backdrop-blur-sm">
           <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-titans-red to-titans-orange rounded-full flex items-center justify-center mx-auto mb-4">
-              <KeyRound className="h-8 w-8 text-white" />
+            <div className="mx-auto mb-4 w-28">
+              <img
+                src={bixoTitans.src}
+                alt="Ícone Titans"
+                className="h-full w-full origin-bottom object-contain animate-walk"
+              />
             </div>
             <CardTitle className="text-xl">Defina sua senha</CardTitle>
           </CardHeader>
