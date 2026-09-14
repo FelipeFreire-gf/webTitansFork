@@ -27,6 +27,8 @@ export async function enviarConviteDeSenha(email: string, nome: string | null): 
   // recente deve funcionar.
   await prisma.verificationToken.deleteMany({ where: { identifier: email } });
   await prisma.verificationToken.create({ data: { identifier: email, token, expires } });
+  // Zera o sinal de "abriu o link" — é sobre o convite vigente, não um antigo.
+  await prisma.user.updateMany({ where: { email }, data: { conviteAbertoEm: null } });
 
   const baseUrl = process.env.PUBLIC_BASE_URL || "http://localhost:3000";
   const link = `${baseUrl}/definir-senha?token=${token}`;
@@ -40,4 +42,22 @@ export async function enviarConviteDeSenha(email: string, nome: string | null): 
     console.error(`Falha ao enviar convite de senha para ${email}`);
   }
   return ok;
+}
+
+// Chamado pela página /definir-senha ao carregar com um token — registra a
+// primeira abertura do link (sinal exibido em Gerenciar Membros). Best-effort
+// e idempotente: só grava a primeira vez (conviteAbertoEm: null na cláusula
+// where), nunca lança — abrir a página nunca pode quebrar por causa disso.
+export async function registrarAberturaConvite(token: string): Promise<void> {
+  try {
+    const registro = await prisma.verificationToken.findUnique({ where: { token } });
+    if (!registro || registro.expires < new Date()) return;
+
+    await prisma.user.updateMany({
+      where: { email: registro.identifier, conviteAbertoEm: null },
+      data: { conviteAbertoEm: new Date() },
+    });
+  } catch (err) {
+    console.error("Falha ao registrar abertura do convite:", err);
+  }
 }

@@ -85,6 +85,7 @@ export async function PATCH(
       nivelCarta: true,
       curso: true,
       semestre: true,
+      conviteAbertoEm: true,
       projetos: { select: { id: true, nome: true } },
     },
   });

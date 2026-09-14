@@ -86,6 +86,11 @@ model User {
   dataNascimento     DateTime?    @map("data_nascimento") @db.Date
   curso              String?
   semestre           Int?
+  // Quando o membro abriu o link de "defina sua senha" do convite mais
+  // recente pela primeira vez. Zerado sempre que um novo convite é (re)enviado
+  // (ver enviarConviteDeSenha) — reflete sempre o convite vigente, não um
+  // antigo. Null = ainda não abriu (ou não há convite pendente).
+  conviteAbertoEm    DateTime?    @map("convite_aberto_em")
   createdAt          DateTime     @default(now()) @map("created_at")
 
   projetos Projeto[]
