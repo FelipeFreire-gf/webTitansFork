@@ -1,13 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import dynamic from "next/dynamic";
-
-// Kanban é 100% client-side (estado em memória, drag & drop). Sem SSR para
-// evitar mismatch de hidratação nas datas relativas dos dados de exemplo.
-const EquipeTarefas = dynamic(() => import("@/views/EquipeTarefas"), {
-  ssr: false,
-});
-
+// Rota antiga: o quadro de tarefas agora é por projeto, dentro do painel em /equipe.
 export default function Page() {
-  return <EquipeTarefas />;
+  redirect("/equipe");
 }
