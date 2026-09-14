@@ -156,36 +156,37 @@ export function KanbanBoard({ projetoId }: { projetoId: string }) {
         </div>
       )}
 
-      <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(16rem,1fr))]">
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {colunas.map((coluna) => (
-          <KanbanColumn
-            key={coluna.id}
-            coluna={coluna}
-            tasks={tasks.filter((t) => t.colunaId === coluna.id)}
-            canEdit={canEdit}
-            draggingId={draggingId}
-            onNewTask={() => setDialog({ kind: "create", colunaId: coluna.id })}
-            onOpenTask={(task) => setDialog({ kind: "view", id: task.id })}
-            onDragStartTask={setDraggingId}
-            onDragEndTask={() => setDraggingId(null)}
-            onDropTask={(id, colunaId) => {
-              setDraggingId(null);
-              if (tasks.find((t) => t.id === id)?.colunaId === colunaId) return;
-              moveTask(id, colunaId).catch((e) =>
-                toast.error(e instanceof Error ? e.message : "Erro ao mover tarefa"),
-              );
-            }}
-            onRename={(nome) =>
-              renameColuna(coluna.id, nome).catch((e) =>
-                toast.error(e instanceof Error ? e.message : "Erro ao renomear coluna"),
-              )
-            }
-            onDelete={() =>
-              deleteColuna(coluna.id).catch((e) =>
-                toast.error(e instanceof Error ? e.message : "Erro ao excluir coluna"),
-              )
-            }
-          />
+          <div key={coluna.id} className="w-64 shrink-0">
+            <KanbanColumn
+              coluna={coluna}
+              tasks={tasks.filter((t) => t.colunaId === coluna.id)}
+              canEdit={canEdit}
+              draggingId={draggingId}
+              onNewTask={() => setDialog({ kind: "create", colunaId: coluna.id })}
+              onOpenTask={(task) => setDialog({ kind: "view", id: task.id })}
+              onDragStartTask={setDraggingId}
+              onDragEndTask={() => setDraggingId(null)}
+              onDropTask={(id, colunaId) => {
+                setDraggingId(null);
+                if (tasks.find((t) => t.id === id)?.colunaId === colunaId) return;
+                moveTask(id, colunaId).catch((e) =>
+                  toast.error(e instanceof Error ? e.message : "Erro ao mover tarefa"),
+                );
+              }}
+              onRename={(nome) =>
+                renameColuna(coluna.id, nome).catch((e) =>
+                  toast.error(e instanceof Error ? e.message : "Erro ao renomear coluna"),
+                )
+              }
+              onDelete={() =>
+                deleteColuna(coluna.id).catch((e) =>
+                  toast.error(e instanceof Error ? e.message : "Erro ao excluir coluna"),
+                )
+              }
+            />
+          </div>
         ))}
       </div>
 
