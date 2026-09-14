@@ -23,12 +23,14 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { formatDueDate, isDueToday, isOverdue } from "@/lib/kanban/format";
-import { STATUS_META, type Task } from "@/lib/kanban/types";
+import type { Task } from "@/lib/kanban/types";
 
 import { PriorityBadge } from "./PriorityBadge";
 
 export function TaskDetailDialog({
   task,
+  colunaNome,
+  canEdit,
   open,
   onOpenChange,
   onEdit,
@@ -36,6 +38,8 @@ export function TaskDetailDialog({
   onToggleSubtask,
 }: {
   task: Task | null;
+  colunaNome: string;
+  canEdit: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: () => void;
@@ -46,9 +50,7 @@ export function TaskDetailDialog({
 
   const done = task.subtasks.filter((s) => s.done).length;
   const total = task.subtasks.length;
-  const danger =
-    task.status !== "concluida" &&
-    (isDueToday(task.dueDate) || isOverdue(task.dueDate));
+  const danger = isDueToday(task.dueDate) || isOverdue(task.dueDate);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -57,13 +59,8 @@ export function TaskDetailDialog({
           <div className="flex flex-wrap items-center gap-2">
             <PriorityBadge priority={task.priority} />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-              <span
-                className={cn(
-                  "h-2 w-2 rounded-full",
-                  STATUS_META[task.status].dot,
-                )}
-              />
-              {STATUS_META[task.status].label}
+              <span className="h-2 w-2 rounded-full bg-titans-orange" />
+              {colunaNome}
             </span>
           </div>
           <DialogTitle className="pt-1 text-left">{task.title}</DialogTitle>
@@ -89,6 +86,7 @@ export function TaskDetailDialog({
                   <label className="flex cursor-pointer items-center gap-2 text-sm">
                     <Checkbox
                       checked={s.done}
+                      disabled={!canEdit}
                       onCheckedChange={() => onToggleSubtask(s.id)}
                     />
                     <span
@@ -118,38 +116,40 @@ export function TaskDetailDialog({
           </span>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Excluir
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. A tarefa &ldquo;{task.title}
-                  &rdquo; será removida do quadro.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  onClick={onDelete}
-                >
+        {canEdit && (
+          <div className="flex justify-end gap-2 pt-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
                   Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-          <Button onClick={onEdit}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Editar tarefa
-          </Button>
-        </div>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. A tarefa &ldquo;{task.title}
+                    &rdquo; será removida do quadro.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={onDelete}
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button onClick={onEdit}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar tarefa
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

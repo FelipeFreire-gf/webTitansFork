@@ -1,9 +1,12 @@
 services:
   auth:
-    image: auth
+    container_name: siteTitans
+    image: siteTitans
     build:
       context: .
       target: deps
+    env_file:
+      - .env  
     ports:
       - "5000:8080"
     environment:

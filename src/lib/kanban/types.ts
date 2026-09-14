@@ -1,5 +1,3 @@
-export type TaskStatus = "pendente" | "em_progresso" | "concluida";
-
 export type TaskPriority = 1 | 2 | 3;
 
 export interface Subtask {
@@ -8,48 +6,32 @@ export interface Subtask {
   done: boolean;
 }
 
+export interface Coluna {
+  id: string;
+  nome: string;
+  ordem: number;
+}
+
 export interface Task {
   id: string;
   title: string;
   description: string;
-  status: TaskStatus;
   priority: TaskPriority;
   /** Data de entrega em ISO (yyyy-MM-dd) ou null quando sem prazo. */
   dueDate: string | null;
+  colunaId: string;
   subtasks: Subtask[];
   createdAt: string;
 }
 
-interface StatusMeta {
-  label: string;
-  /** Classe de cor do marcador/accent da coluna. */
-  accent: string;
-  dot: string;
+export interface BoardData {
+  projetoId: string;
+  projetoNome: string;
+  /** Se o usuário logado pode criar/editar/mover tarefas e colunas deste projeto. */
+  canEdit: boolean;
+  colunas: Coluna[];
+  tasks: Task[];
 }
-
-export const STATUS_ORDER: TaskStatus[] = [
-  "pendente",
-  "em_progresso",
-  "concluida",
-];
-
-export const STATUS_META: Record<TaskStatus, StatusMeta> = {
-  pendente: {
-    label: "A começar",
-    accent: "border-t-titans-red",
-    dot: "bg-titans-red",
-  },
-  em_progresso: {
-    label: "Em andamento",
-    accent: "border-t-titans-gold",
-    dot: "bg-titans-gold",
-  },
-  concluida: {
-    label: "Concluído",
-    accent: "border-t-emerald-500",
-    dot: "bg-emerald-500",
-  },
-};
 
 interface PriorityMeta {
   label: string;

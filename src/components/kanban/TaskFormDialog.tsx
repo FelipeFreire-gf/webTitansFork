@@ -32,14 +32,12 @@ import { toISODate } from "@/lib/kanban/format";
 import {
   PRIORITY_META,
   PRIORITY_ORDER,
-  STATUS_META,
-  STATUS_ORDER,
+  type Coluna,
   type Subtask,
   type Task,
   type TaskPriority,
-  type TaskStatus,
 } from "@/lib/kanban/types";
-import type { TaskDraft } from "@/hooks/useKanban";
+import type { TaskDraft } from "@/hooks/useProjetoBoard";
 
 type SubtaskRow = Subtask & { key: string };
 
@@ -60,20 +58,22 @@ export function TaskFormDialog({
   open,
   mode,
   task,
-  defaultStatus,
+  colunas,
+  defaultColunaId,
   onOpenChange,
   onSubmit,
 }: {
   open: boolean;
   mode: "create" | "edit";
   task: Task | null;
-  defaultStatus: TaskStatus;
+  colunas: Coluna[];
+  defaultColunaId: string;
   onOpenChange: (open: boolean) => void;
   onSubmit: (draft: TaskDraft) => void;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<TaskStatus>(defaultStatus);
+  const [colunaId, setColunaId] = useState(defaultColunaId);
   const [priority, setPriority] = useState<TaskPriority>(1);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [rows, setRows] = useState<SubtaskRow[]>(buildRows(null));
@@ -83,12 +83,12 @@ export function TaskFormDialog({
     if (!open) return;
     setTitle(task?.title ?? "");
     setDescription(task?.description ?? "");
-    setStatus(task?.status ?? defaultStatus);
+    setColunaId(task?.colunaId ?? defaultColunaId);
     setPriority(task?.priority ?? 1);
     setDueDate(task?.dueDate ?? null);
     setRows(buildRows(task ?? null));
     setShowError(false);
-  }, [open, task, defaultStatus]);
+  }, [open, task, defaultColunaId]);
 
   function updateRow(key: string, patch: Partial<SubtaskRow>) {
     setRows((prev) => {
@@ -117,7 +117,7 @@ export function TaskFormDialog({
     onSubmit({
       title: title.trim(),
       description: description.trim(),
-      status,
+      colunaId,
       priority,
       dueDate,
       subtasks: rows
@@ -207,18 +207,15 @@ export function TaskFormDialog({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Progresso</Label>
-              <Select
-                value={status}
-                onValueChange={(v) => setStatus(v as TaskStatus)}
-              >
+              <Label>Coluna</Label>
+              <Select value={colunaId} onValueChange={setColunaId}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_ORDER.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {STATUS_META[s].label}
+                  {colunas.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
