@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "copy-pdf-worker": "node scripts/copy-pdf-worker.mjs",
-    "postinstall": "node scripts/copy-pdf-worker.mjs",
+    "postinstall": "prisma generate && node scripts/copy-pdf-worker.mjs",
     "prebuild": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
