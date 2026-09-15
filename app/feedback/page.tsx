@@ -1,7 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
 
-// Rota antiga: feedback agora é uma aba dentro do painel de membro em /equipe
-// (exige login — antes era pública/anônima sem conta).
+import FeedbackPage from "@/views/FeedbackPage";
+
 export default function Page() {
-  redirect("/equipe");
+  return <FeedbackPage />;
 }
