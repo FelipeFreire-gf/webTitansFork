@@ -7,6 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Loader2, Megaphone, Plus, Trash2 } from "lucide-react";
+import bannerBoasVindas from "@/assets/avisosGerais/boasVindas.png";
+import bannerFeedback from "@/assets/avisosGerais/feedback.png";
+import ProjectHeroCarousel from "@/components/ProjectHeroCarousel";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -258,6 +261,22 @@ const AvisosPainel = () => {
         {isLideranca && <AvisoDialog onCreated={(a) => setAvisos((prev) => [a, ...(prev ?? [])])} />}
       </CardHeader>
       <CardContent>
+        <ProjectHeroCarousel
+          className="mb-4 max-w-none"
+          itemClassName="bg-background"
+          ariaLabel="Avisos da equipe"
+          images={[
+            {
+              src: bannerBoasVindas.src,
+              alt: "Bem-vindo ao novo sistema da TITANS",
+            },
+            {
+              src: bannerFeedback.src,
+              alt: "Dê seu feedback para a equipe ou para o sistema web — sua ajuda é valiosa",
+            },
+          ]}
+        />
+
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
