@@ -1,8 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { format, parseISO } from "date-fns";
 import { useVisao } from "@/components/equipe/VisaoContext";
-import { Download, KeyRound, Loader2, Mail, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import {
+  Download,
+  KeyRound,
+  Loader2,
+  Mail,
+  MailOpen,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -67,6 +78,10 @@ interface Membro {
   nivelCarta: NivelCarta | null;
   curso: string | null;
   semestre: number | null;
+  /** Quando o membro abriu o link de definir senha do convite vigente (null = ainda não). */
+  conviteAbertoEm: string | null;
+  /** Se há um convite de senha pendente (token ainda válido) pra esse e-mail. */
+  convitePendente: boolean;
   projetos: Projeto[];
 }
 
@@ -126,22 +141,24 @@ function FormularioMembro({
     e.preventDefault();
     setSaving(true);
     try {
-      const { membro, emailEnviado } = await api<{ membro: Membro; emailEnviado: boolean | null }>(
-        "/api/admin/membros",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            nome,
-            email,
-            role,
-            status,
-            curso: curso || null,
-            semestre: semestre ? Number(semestre) : null,
-            projetoIds,
-          }),
-        },
-      );
-      onCreated(membro);
+      const { membro, emailEnviado } = await api<{
+        membro: Omit<Membro, "convitePendente">;
+        emailEnviado: boolean | null;
+      }>("/api/admin/membros", {
+        method: "POST",
+        body: JSON.stringify({
+          nome,
+          email,
+          role,
+          status,
+          curso: curso || null,
+          semestre: semestre ? Number(semestre) : null,
+          projetoIds,
+        }),
+      });
+      // Esse fluxo sempre gera um convite novo — o token já existe mesmo que
+      // o e-mail em si tenha falhado (dá pra reenviar depois).
+      onCreated({ ...membro, convitePendente: true });
       if (emailEnviado === false) {
         toast.warning("Membro adicionado, mas o e-mail de convite não pôde ser enviado", {
           description: "Verifique a configuração do Resend e reenvie o convite pelo ícone de envelope.",
@@ -330,20 +347,24 @@ function CadastroManualMembro({
 
     setSaving(true);
     try {
-      const { membro } = await api<{ membro: Membro }>("/api/admin/membros", {
-        method: "POST",
-        body: JSON.stringify({
-          nome,
-          email,
-          senha,
-          role,
-          status,
-          curso: curso || null,
-          semestre: semestre ? Number(semestre) : null,
-          projetoIds,
-        }),
-      });
-      onCreated(membro);
+      const { membro } = await api<{ membro: Omit<Membro, "convitePendente"> }>(
+        "/api/admin/membros",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            nome,
+            email,
+            senha,
+            role,
+            status,
+            curso: curso || null,
+            semestre: semestre ? Number(semestre) : null,
+            projetoIds,
+          }),
+        },
+      );
+      // Cadastro manual não gera convite por e-mail, então não há token pendente.
+      onCreated({ ...membro, convitePendente: false });
       toast.success("Membro cadastrado");
       reset();
       setOpen(false);
@@ -547,7 +568,7 @@ function EditarMembroDialog({
 
     setSaving(true);
     try {
-      const { membro: atualizado } = await api<{ membro: Membro }>(
+      const { membro: atualizado } = await api<{ membro: Omit<Membro, "convitePendente"> }>(
         `/api/admin/membros/${membro.id}`,
         {
           method: "PATCH",
@@ -564,7 +585,8 @@ function EditarMembroDialog({
           }),
         },
       );
-      onUpdated(atualizado);
+      // Editar dados não mexe em convite/token — preserva o sinal que já tínhamos.
+      onUpdated({ ...atualizado, convitePendente: membro.convitePendente });
       toast.success("Dados do membro atualizados");
       setOpen(false);
     } catch (err) {
@@ -855,7 +877,11 @@ function ImportarTxt({ onImported }: { onImported: () => void }) {
 }
 
 const AdminMembros = () => {
-  const { isMestre } = useVisao();
+  const { isMestre, role } = useVisao();
+  // MESTRE e CAPITAO corrigem dados/importam .txt; Gerente de Projeto só vê,
+  // reenvia convite e vê o sinal de abertura — cadastrar e remover são só do MESTRE.
+  const podeEditar = role === "MESTRE" || role === "CAPITAO";
+  const podeReenviarConvite = podeEditar || role === "GERENTE_PROJETO";
   const [membros, setMembros] = useState<Membro[] | null>(null);
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -893,6 +919,13 @@ const AdminMembros = () => {
   async function handleReenviarConvite(id: string) {
     try {
       await api(`/api/admin/membros/${id}/reenviar-convite`, { method: "POST" });
+      // Novo token, ainda não aberto — reflete isso na hora, sem esperar reload.
+      setMembros(
+        (prev) =>
+          prev?.map((m) =>
+            m.id === id ? { ...m, convitePendente: true, conviteAbertoEm: null } : m,
+          ) ?? null,
+      );
       toast.success("Convite reenviado");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao reenviar convite");
@@ -941,7 +974,9 @@ const AdminMembros = () => {
           <CardDescription>
             {isMestre
               ? "Cadastre membros manualmente ou importe vários de uma vez."
-              : "Consulta ao quadro de membros — só o Mestre cadastra, edita ou remove."}
+              : podeEditar
+                ? "Corrija dados, reenvie convites e importe .txt — cadastrar ou remover membros é só do Mestre."
+                : "Consulta ao quadro de membros e reenvio de convite de senha."}
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -949,9 +984,9 @@ const AdminMembros = () => {
             <Download className="mr-2 h-4 w-4" />
             Baixar .txt
           </Button>
+          {podeEditar && <ImportarTxt onImported={carregar} />}
           {isMestre && (
             <>
-              <ImportarTxt onImported={carregar} />
               <CadastroManualMembro
                 projetos={projetos}
                 onCreated={(membro) => setMembros((prev) => [...(prev ?? []), membro])}
@@ -982,7 +1017,7 @@ const AdminMembros = () => {
                   <TableHead>Nível</TableHead>
                   <TableHead>Curso / Semestre</TableHead>
                   <TableHead>Projetos</TableHead>
-                  {isMestre && <TableHead className="w-10" />}
+                  {podeReenviarConvite && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1016,18 +1051,43 @@ const AdminMembros = () => {
                         ))}
                       </div>
                     </TableCell>
-                    {isMestre && (
+                    {podeReenviarConvite && (
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <EditarMembroDialog
-                            membro={m}
-                            projetos={projetos}
-                            onUpdated={(atualizado) =>
-                              setMembros((prev) =>
-                                prev?.map((x) => (x.id === atualizado.id ? atualizado : x)) ?? null,
-                              )
-                            }
-                          />
+                          {m.convitePendente && (
+                            <span
+                              className={`flex h-8 w-8 shrink-0 items-center justify-center ${
+                                m.conviteAbertoEm
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : "text-muted-foreground/50"
+                              }`}
+                              title={
+                                m.conviteAbertoEm
+                                  ? `Abriu o link de senha em ${format(
+                                      parseISO(m.conviteAbertoEm),
+                                      "dd/MM/yyyy 'às' HH:mm",
+                                    )}`
+                                  : "Convite enviado — ainda não abriu o link de senha"
+                              }
+                            >
+                              {m.conviteAbertoEm ? (
+                                <MailOpen className="h-4 w-4" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                            </span>
+                          )}
+                          {podeEditar && (
+                            <EditarMembroDialog
+                              membro={m}
+                              projetos={projetos}
+                              onUpdated={(atualizado) =>
+                                setMembros((prev) =>
+                                  prev?.map((x) => (x.id === atualizado.id ? atualizado : x)) ?? null,
+                                )
+                              }
+                            />
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1038,15 +1098,17 @@ const AdminMembros = () => {
                           >
                             <Mail className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDelete(m.id)}
-                            aria-label={`Remover ${m.nome ?? m.email}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isMestre && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDelete(m.id)}
+                              aria-label={`Remover ${m.nome ?? m.email}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     )}

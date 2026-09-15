@@ -73,6 +73,13 @@ enum NivelCarta {
   @@map("nivel_carta")
 }
 
+enum LogCategoria {
+  AUTENTICACAO
+  TAREFAS
+
+  @@map("log_categoria")
+}
+
 model User {
   id                 String       @id @default(uuid()) @db.Uuid
   email              String       @unique
@@ -86,6 +93,11 @@ model User {
   dataNascimento     DateTime?    @map("data_nascimento") @db.Date
   curso              String?
   semestre           Int?
+  // Quando o membro abriu o link de "defina sua senha" do convite mais
+  // recente pela primeira vez. Zerado sempre que um novo convite é (re)enviado
+  // (ver enviarConviteDeSenha) — reflete sempre o convite vigente, não um
+  // antigo. Null = ainda não abriu (ou não há convite pendente).
+  conviteAbertoEm    DateTime?    @map("convite_aberto_em")
   createdAt          DateTime     @default(now()) @map("created_at")
 
   projetos Projeto[]
@@ -101,6 +113,8 @@ model User {
   sessoesPresencaCriadas SessaoPresenca[] @relation("SessaoPresencaCriadoPor")
   presencasComoMembro    Presenca[]       @relation("PresencaMembro")
   presencasRegistradas   Presenca[]       @relation("PresencaRegistradoPor")
+
+  logs LogAtividade[]
 
   @@map("users")
 }
@@ -297,6 +311,30 @@ model Aviso {
   atualizadoPor User     @relation("AvisoAtualizadoPor", fields: [atualizadoPorId], references: [id])
 
   @@map("avisos")
+}
+
+// Quadro de logs (só o MESTRE acessa): tentativas de login, conexões e
+// alterações no quadro de tarefas — pra investigar erros de acesso. Guarda
+// nome/e-mail "congelados" no momento do evento (não só a FK) porque a
+// tentativa de login com e-mail errado não tem User pra referenciar, e um
+// log não pode virar lixo órfão se o membro for removido depois.
+model LogAtividade {
+  id           String       @id @default(uuid()) @db.Uuid
+  criadoEm     DateTime     @default(now()) @map("criado_em")
+  usuarioId    String?      @map("usuario_id") @db.Uuid
+  usuarioNome  String?      @map("usuario_nome")
+  usuarioEmail String?      @map("usuario_email")
+  categoria    LogCategoria
+  acao         String
+  descricao    String
+  ip           String?
+  userAgent    String?      @map("user_agent")
+
+  usuario User? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([criadoEm])
+  @@index([categoria])
+  @@map("logs_atividade")
 }
 
 enum TipoPedido3D {

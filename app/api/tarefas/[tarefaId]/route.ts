@@ -1,6 +1,7 @@
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
 import { podeEditarColuna, podeEditarTarefa, mapTarefa } from "@/lib/server/board";
+import { registrarLog } from "@/lib/server/log";
 import type { TaskPriority } from "@/lib/kanban/types";
 
 export const runtime = "nodejs";
@@ -72,6 +73,11 @@ export async function PATCH(
     data.subtarefas = { create: parseSubtasks(body.subtasks) };
   }
 
+  const anterior = await prisma.tarefa.findUnique({
+    where: { id: tarefaId },
+    select: { titulo: true, colunaId: true },
+  });
+
   const tarefa = await prisma.tarefa.update({
     where: { id: tarefaId },
     data,
@@ -84,14 +90,36 @@ export async function PATCH(
       colunaId: true,
       createdAt: true,
       subtarefas: { select: { id: true, descricao: true, concluida: true } },
+      coluna: { select: { nome: true } },
     },
   });
+
+  const usuarioLog = {
+    usuarioId: session.user.id,
+    usuarioNome: session.user.name,
+    usuarioEmail: session.user.email,
+    categoria: "TAREFAS" as const,
+    request: req,
+  };
+  if (novaColunaId && novaColunaId !== anterior?.colunaId) {
+    await registrarLog({
+      ...usuarioLog,
+      acao: "tarefa_movida",
+      descricao: `Moveu a tarefa "${tarefa.titulo}" para a coluna "${tarefa.coluna.nome}"`,
+    });
+  } else {
+    await registrarLog({
+      ...usuarioLog,
+      acao: "tarefa_atualizada",
+      descricao: `Atualizou a tarefa "${anterior?.titulo ?? tarefa.titulo}"`,
+    });
+  }
 
   return Response.json(mapTarefa(tarefa));
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ tarefaId: string }> }
 ) {
   const session = await auth();
@@ -105,6 +133,22 @@ export async function DELETE(
   if (canEdit === null) return Response.json({ error: "Tarefa não encontrada" }, { status: 404 });
   if (!canEdit) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
+  const { titulo } = await prisma.tarefa.findUniqueOrThrow({
+    where: { id: tarefaId },
+    select: { titulo: true },
+  });
+
   await prisma.tarefa.delete({ where: { id: tarefaId } });
+
+  await registrarLog({
+    usuarioId: session.user.id,
+    usuarioNome: session.user.name,
+    usuarioEmail: session.user.email,
+    categoria: "TAREFAS",
+    acao: "tarefa_removida",
+    descricao: `Removeu a tarefa "${titulo}"`,
+    request: req,
+  });
+
   return Response.json({ ok: true });
 }

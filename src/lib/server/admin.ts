@@ -1,7 +1,12 @@
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { Session } from "next-auth";
-import { GERENTE_OU_SUPERIOR, LEADERSHIP_ROLES } from "../roles";
+import {
+  EDITAR_MEMBROS_ROLES,
+  GERENTE_OU_SUPERIOR,
+  LEADERSHIP_ROLES,
+  REENVIAR_CONVITE_ROLES,
+} from "../roles";
 
 /** Só o MESTRE gerencia cadastro de membros e atribuição de cargos/projetos. */
 export function isMestre(session: Session | null): boolean {
@@ -18,6 +23,18 @@ export function isLideranca(session: Session | null): boolean {
 export function isGerenteOuSuperior(session: Session | null): boolean {
   if (!session?.user?.role) return false;
   return GERENTE_OU_SUPERIOR.includes(session.user.role);
+}
+
+/** MESTRE/CAPITAO corrigem dados de membros já cadastrados e importam .txt — cadastro e remoção continuam só do MESTRE. */
+export function podeEditarMembros(session: Session | null): boolean {
+  if (!session?.user?.role) return false;
+  return EDITAR_MEMBROS_ROLES.includes(session.user.role);
+}
+
+/** MESTRE/CAPITAO/GERENTE_PROJETO reenviam convite de senha — Gerente de Projeto só isso e a visualização, sem editar dados. */
+export function podeReenviarConvite(session: Session | null): boolean {
+  if (!session?.user?.role) return false;
+  return REENVIAR_CONVITE_ROLES.includes(session.user.role);
 }
 
 /**

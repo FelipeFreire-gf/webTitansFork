@@ -27,6 +27,12 @@ export const LEADERSHIP_ROLES: Role[] = ["MESTRE", "CAPITAO", "VICE_CAPITAO"];
 /** Gerente de projeto pra cima — quem pode editar o painel de presenças. */
 export const GERENTE_OU_SUPERIOR: Role[] = ["MESTRE", "CAPITAO", "VICE_CAPITAO", "GERENTE_PROJETO"];
 
+/** Corrigem dados de membros já cadastrados e importam .txt — cadastro e remoção continuam só do MESTRE. */
+export const EDITAR_MEMBROS_ROLES: Role[] = ["MESTRE", "CAPITAO"];
+
+/** Reenviam convite de senha e veem o sinal de abertura do link — Gerente de Projeto só isso, sem editar dados. */
+export const REENVIAR_CONVITE_ROLES: Role[] = ["MESTRE", "CAPITAO", "GERENTE_PROJETO"];
+
 const ROLE_ALIASES: Record<string, Role> = {};
 for (const role of ROLE_ORDER) {
   ROLE_ALIASES[normalizarTexto(role)] = role;

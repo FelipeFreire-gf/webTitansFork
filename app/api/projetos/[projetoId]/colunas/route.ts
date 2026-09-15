@@ -4,6 +4,7 @@ import { getProjetoComMembros } from "@/lib/server/board";
 import { podeEditarProjeto } from "@/lib/server/permissions";
 import { mapColuna } from "@/lib/server/board";
 import { MAX_COLUNAS_POR_PROJETO } from "@/lib/projetos";
+import { registrarLog } from "@/lib/server/log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,6 +44,16 @@ export async function POST(
 
   const coluna = await prisma.coluna.create({
     data: { nome, ordem: (ultima?.ordem ?? -1) + 1, projetoId },
+  });
+
+  await registrarLog({
+    usuarioId: session.user.id,
+    usuarioNome: session.user.name,
+    usuarioEmail: session.user.email,
+    categoria: "TAREFAS",
+    acao: "coluna_criada",
+    descricao: `Criou a coluna "${nome}" no projeto ${projeto.nome}`,
+    request: req,
   });
 
   return Response.json(mapColuna(coluna), { status: 201 });
