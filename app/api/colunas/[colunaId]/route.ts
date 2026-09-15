@@ -1,6 +1,7 @@
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
 import { podeEditarColuna, mapColuna } from "@/lib/server/board";
+import { registrarLog } from "@/lib/server/log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,12 +26,28 @@ export async function PATCH(
   if (canEdit === null) return Response.json({ error: "Coluna não encontrada" }, { status: 404 });
   if (!canEdit) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
+  const anterior = await prisma.coluna.findUnique({
+    where: { id: colunaId },
+    select: { nome: true, projeto: { select: { nome: true } } },
+  });
+
   const coluna = await prisma.coluna.update({ where: { id: colunaId }, data: { nome } });
+
+  await registrarLog({
+    usuarioId: session.user.id,
+    usuarioNome: session.user.name,
+    usuarioEmail: session.user.email,
+    categoria: "TAREFAS",
+    acao: "coluna_renomeada",
+    descricao: `Renomeou a coluna "${anterior?.nome ?? "?"}" para "${nome}" no projeto ${anterior?.projeto.nome ?? "?"}`,
+    request: req,
+  });
+
   return Response.json(mapColuna(coluna));
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ colunaId: string }> }
 ) {
   const session = await auth();
@@ -45,9 +62,9 @@ export async function DELETE(
   if (canEdit === null) return Response.json({ error: "Coluna não encontrada" }, { status: 404 });
   if (!canEdit) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
-  const { projetoId } = await prisma.coluna.findUniqueOrThrow({
+  const { projetoId, nome, projeto } = await prisma.coluna.findUniqueOrThrow({
     where: { id: colunaId },
-    select: { projetoId: true },
+    select: { projetoId: true, nome: true, projeto: { select: { nome: true } } },
   });
   const total = await prisma.coluna.count({ where: { projetoId } });
   if (total <= 1) {
@@ -58,5 +75,16 @@ export async function DELETE(
   }
 
   await prisma.coluna.delete({ where: { id: colunaId } });
+
+  await registrarLog({
+    usuarioId: session.user.id,
+    usuarioNome: session.user.name,
+    usuarioEmail: session.user.email,
+    categoria: "TAREFAS",
+    acao: "coluna_removida",
+    descricao: `Removeu a coluna "${nome}" do projeto ${projeto.nome}`,
+    request: req,
+  });
+
   return Response.json({ ok: true });
 }

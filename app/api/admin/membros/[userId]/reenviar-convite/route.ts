@@ -1,6 +1,6 @@
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
-import { isMestre } from "@/lib/server/admin";
+import { podeReenviarConvite } from "@/lib/server/admin";
 import { enviarConviteDeSenha } from "@/lib/server/convite";
 
 export const runtime = "nodejs";
@@ -12,7 +12,7 @@ export async function POST(
 ) {
   const session = await auth();
   if (!session) return Response.json({ error: "Não autenticado" }, { status: 401 });
-  if (!isMestre(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
+  if (!podeReenviarConvite(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
   const { userId } = await params;
   const membro = await prisma.user.findUnique({

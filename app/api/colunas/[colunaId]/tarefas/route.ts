@@ -1,6 +1,7 @@
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
 import { podeEditarColuna, mapTarefa } from "@/lib/server/board";
+import { registrarLog } from "@/lib/server/log";
 import type { TaskPriority } from "@/lib/kanban/types";
 
 export const runtime = "nodejs";
@@ -72,7 +73,18 @@ export async function POST(
       colunaId: true,
       createdAt: true,
       subtarefas: { select: { id: true, descricao: true, concluida: true } },
+      coluna: { select: { nome: true } },
     },
+  });
+
+  await registrarLog({
+    usuarioId: session.user.id,
+    usuarioNome: session.user.name,
+    usuarioEmail: session.user.email,
+    categoria: "TAREFAS",
+    acao: "tarefa_criada",
+    descricao: `Criou a tarefa "${title}" na coluna "${tarefa.coluna.nome}"`,
+    request: req,
   });
 
   return Response.json(mapTarefa(tarefa), { status: 201 });

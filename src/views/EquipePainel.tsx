@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { Megaphone, KanbanSquare, CalendarDays, ClipboardCheck, Eye, LogOut, Users2 } from "lucide-react";
+import {
+  Megaphone,
+  KanbanSquare,
+  CalendarDays,
+  ClipboardCheck,
+  Eye,
+  LogOut,
+  Users2,
+  ScrollText,
+} from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,24 +23,20 @@ import {
 } from "@/components/ui/select";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import AdminMembros from "@/views/AdminMembros";
+import AdminLogs from "@/views/AdminLogs";
 import AvisosPainel from "@/views/AvisosPainel";
 import CalendarioPainel from "@/views/CalendarioPainel";
 import PresencasPainel from "@/views/PresencasPainel";
 import StatusSistema from "@/components/equipe/StatusSistema";
 import { VisaoProvider, useVisao, type PapelVisualizacao } from "@/components/equipe/VisaoContext";
+import { ROLE_LABELS, ROLE_ORDER } from "@/lib/roles";
 
-type PainelView = "avisos" | "calendario" | "presencas" | "tarefas" | "membros";
+type PainelView = "avisos" | "calendario" | "presencas" | "tarefas" | "membros" | "logs";
 
 interface ProjetoResumo {
   id: string;
   nome: string;
 }
-
-const LABEL_VISUALIZACAO: Record<PapelVisualizacao, string> = {
-  MESTRE: "Mestre",
-  CAPITAO: "Capitão",
-  MEMBRO_PROJETO: "Membro",
-};
 
 function EquipeHeader({
   nome,
@@ -68,14 +73,16 @@ function EquipeHeader({
                 setVisualizandoComo(v === "MESTRE" ? null : (v as PapelVisualizacao))
               }
             >
-              <SelectTrigger className="h-9 w-[170px] text-xs">
+              <SelectTrigger className="h-9 w-[200px] text-xs">
                 <Eye className="mr-1 h-3.5 w-3.5 shrink-0" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="MESTRE">Ver como Mestre</SelectItem>
-                <SelectItem value="CAPITAO">Ver como Capitão</SelectItem>
-                <SelectItem value="MEMBRO_PROJETO">Ver como Membro</SelectItem>
+                {ROLE_ORDER.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    Ver como {ROLE_LABELS[r]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}
@@ -89,7 +96,7 @@ function EquipeHeader({
 
       {visualizandoComo && (
         <div className="border-t border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-center text-xs text-amber-700 dark:text-amber-300 sm:px-6 lg:px-8">
-          Pré-visualizando o painel como <strong>{LABEL_VISUALIZACAO[visualizandoComo]}</strong> —
+          Pré-visualizando o painel como <strong>{ROLE_LABELS[visualizandoComo]}</strong> —
           sua sessão continua sendo Mestre, isso é só visual.
         </div>
       )}
@@ -99,7 +106,9 @@ function EquipeHeader({
 
 function EquipePainelConteudo() {
   const { data: session } = useSession();
-  const { isLideranca } = useVisao();
+  const { isLideranca, isMestre, role } = useVisao();
+  // Gerente de Projeto também acessa Gerenciar Membros (só visualização + reenviar convite).
+  const podeVerMembros = isLideranca || role === "GERENTE_PROJETO";
   const [view, setView] = useState<PainelView>("avisos");
   const [projetos, setProjetos] = useState<ProjetoResumo[] | null>(null);
   const [meusProjetos, setMeusProjetos] = useState<ProjetoResumo[] | null>(null);
@@ -130,17 +139,19 @@ function EquipePainelConteudo() {
 
   // Se a pré-visualização tirar o acesso à aba atual (ex.: "Membros" vendo como Membro), volta pra uma aba visível.
   useEffect(() => {
-    if (view === "membros" && !isLideranca) setView("avisos");
-  }, [view, isLideranca]);
+    if (view === "membros" && !podeVerMembros) setView("avisos");
+    if (view === "logs" && !isMestre) setView("avisos");
+  }, [view, podeVerMembros, isMestre]);
 
   const navItems = [
     { id: "avisos" as const, label: "Avisos Gerais", icon: Megaphone },
     { id: "calendario" as const, label: "Calendário", icon: CalendarDays },
     { id: "presencas" as const, label: "Presenças", icon: ClipboardCheck },
     { id: "tarefas" as const, label: "Quadro de Tarefas", icon: KanbanSquare },
-    ...(isLideranca
+    ...(podeVerMembros
       ? [{ id: "membros" as const, label: "Gerenciar Membros", icon: Users2 }]
       : []),
+    ...(isMestre ? [{ id: "logs" as const, label: "Logs", icon: ScrollText }] : []),
   ];
 
   return (
@@ -202,7 +213,8 @@ function EquipePainelConteudo() {
                 </div>
               )}
 
-              {view === "membros" && isLideranca && <AdminMembros />}
+              {view === "membros" && podeVerMembros && <AdminMembros />}
+              {view === "logs" && isMestre && <AdminLogs />}
             </div>
           </div>
         </div>
