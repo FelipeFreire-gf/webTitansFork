@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import emailjs from '@emailjs/browser';
 import { feedbackSchema, FeedbackFormValues } from "@/lib/feedback-schema";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,25 +29,16 @@ export default function FeedbackPage() {
   async function onSubmit(data: FeedbackFormValues) {
     const toastId = toast.loading("Enviando seu feedback anonimamente...");
 
-    const templateParams = {
-      name: "Membro Anônimo", 
-      acolhido: data.welcomed,
-      comunicacao: data.communication,
-      responsabilidades: data.responsibilities,
-      evolucao: data.learning,
-      organizacao: data.organization,
-      funciona: data.workingWell,
-      melhorar: data.toImprove,
-      sugestao: data.comments || "Nenhuma sugestão enviada.",
-    };
-
     try {
-      await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
-        templateParams,
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-      );
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const resposta = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof resposta?.error === "string" ? resposta.error : "Erro ao enviar");
+      }
 
       toast.success("Feedback enviado com sucesso!", {
         id: toastId,
@@ -60,7 +50,7 @@ export default function FeedbackPage() {
         id: toastId,
         description: "Tente novamente ou fale com um administrador.",
       });
-      console.error("Erro EmailJS:", error);
+      console.error("Erro ao enviar feedback:", error);
     }
   }
 
