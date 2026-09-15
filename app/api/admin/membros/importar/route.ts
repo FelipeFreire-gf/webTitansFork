@@ -1,6 +1,6 @@
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
-import { isMestre, gerarSenhaPlaceholder } from "@/lib/server/admin";
+import { podeEditarMembros, gerarSenhaPlaceholder } from "@/lib/server/admin";
 import { enviarConviteDeSenha } from "@/lib/server/convite";
 import { resolverRole } from "@/lib/roles";
 import { resolverNomeProjeto } from "@/lib/projetos";
@@ -94,7 +94,8 @@ async function processarLinha(linha: string, numero: number): Promise<LinhaResul
 export async function POST(req: Request) {
   const session = await auth();
   if (!session) return Response.json({ error: "Não autenticado" }, { status: 401 });
-  if (!isMestre(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
+  // MESTRE e CAPITAO importam .txt — cadastro manual/convite avulso continua só com o MESTRE.
+  if (!podeEditarMembros(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
   const body = (await req.json().catch(() => undefined)) as { texto?: unknown } | undefined;
   const texto = typeof body?.texto === "string" ? body.texto : "";

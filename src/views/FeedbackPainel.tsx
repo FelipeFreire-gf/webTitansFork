@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import emailjs from '@emailjs/browser';
 import { feedbackSchema, FeedbackFormValues } from "@/lib/feedback-schema";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export default function FeedbackPage() {
+export default function FeedbackPainel() {
   const form = useForm<FeedbackFormValues>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: {
@@ -30,25 +29,16 @@ export default function FeedbackPage() {
   async function onSubmit(data: FeedbackFormValues) {
     const toastId = toast.loading("Enviando seu feedback anonimamente...");
 
-    const templateParams = {
-      name: "Membro Anônimo", 
-      acolhido: data.welcomed,
-      comunicacao: data.communication,
-      responsabilidades: data.responsibilities,
-      evolucao: data.learning,
-      organizacao: data.organization,
-      funciona: data.workingWell,
-      melhorar: data.toImprove,
-      sugestao: data.comments || "Nenhuma sugestão enviada.",
-    };
-
     try {
-      await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
-        templateParams,
-        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
-      );
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const resposta = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(typeof resposta?.error === "string" ? resposta.error : "Erro ao enviar");
+      }
 
       toast.success("Feedback enviado com sucesso!", {
         id: toastId,
@@ -60,7 +50,7 @@ export default function FeedbackPage() {
         id: toastId,
         description: "Tente novamente ou fale com um administrador.",
       });
-      console.error("Erro EmailJS:", error);
+      console.error("Erro ao enviar feedback:", error);
     }
   }
 
@@ -73,17 +63,15 @@ export default function FeedbackPage() {
   ] as const;
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-2xl border-none shadow-none bg-transparent">
-        <CardHeader className="flex flex-col items-center text-center space-y-2">
-          <CardTitle className="text-3xl font-bold tracking-tight">
-            Feedback Anônimo
-          </CardTitle>
-          <CardDescription className="max-w-[500px] text-base">
-            Melhore nossa equipe com sua opinião sincera.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <Card>
+      <CardHeader>
+        <CardTitle>Feedback Anônimo</CardTitle>
+        <CardDescription>
+          Melhore nossa equipe com sua opinião sincera.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="mx-auto max-w-2xl">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {scaleQuestions.map((q) => (
@@ -155,8 +143,8 @@ export default function FeedbackPage() {
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

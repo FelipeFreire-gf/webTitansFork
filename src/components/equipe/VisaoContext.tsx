@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react";
 import { LEADERSHIP_ROLES } from "@/lib/roles";
 import type { Role } from "../../../generated/prisma/enums";
 
-/** Cargos disponíveis pra pré-visualização — um representante por nível de acesso. */
-export type PapelVisualizacao = Extract<Role, "MESTRE" | "CAPITAO" | "MEMBRO_PROJETO">;
+/** Qualquer cargo do sistema pode ser pré-visualizado — ver ROLE_ORDER em @/lib/roles. */
+export type PapelVisualizacao = Role;
 
 interface VisaoContextValue {
   /** Cargo efetivo pra fins de exibição — o real, a menos que o MESTRE esteja pré-visualizando outro. */

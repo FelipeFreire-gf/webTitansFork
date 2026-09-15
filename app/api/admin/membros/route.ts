@@ -1,6 +1,6 @@
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
-import { isMestre, isLideranca, gerarSenhaPlaceholder, hashSenha } from "@/lib/server/admin";
+import { isMestre, isGerenteOuSuperior, gerarSenhaPlaceholder, hashSenha } from "@/lib/server/admin";
 import { enviarConviteDeSenha } from "@/lib/server/convite";
 import { ROLE_ORDER } from "@/lib/roles";
 import { STATUS_MEMBRO_ORDER } from "@/lib/statusMembro";
@@ -13,9 +13,10 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const session = await auth();
   if (!session) return Response.json({ error: "Não autenticado" }, { status: 401 });
-  // Capitão e Vice-Capitão também podem consultar o quadro de membros — só o
-  // Mestre cria/edita/remove (ver POST abaixo e as rotas em [userId]/*).
-  if (!isLideranca(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
+  // Capitão, Vice-Capitão e Gerente de Projeto também podem consultar o
+  // quadro de membros — quem edita/cadastra/remove é definido nas rotas de
+  // escrita abaixo (ver POST e as rotas em [userId]/*).
+  if (!isGerenteOuSuperior(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
   const [membros, tokensValidos] = await Promise.all([
     prisma.user.findMany({

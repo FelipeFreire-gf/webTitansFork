@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { auth } from "@/lib/server/auth";
 import { prisma } from "@/lib/server/prisma";
-import { isMestre } from "@/lib/server/admin";
+import { isMestre, podeEditarMembros } from "@/lib/server/admin";
 import { ROLE_ORDER } from "@/lib/roles";
 import { STATUS_MEMBRO_ORDER } from "@/lib/statusMembro";
 import { NIVEL_CARTA_ORDER } from "@/lib/nivelCarta";
@@ -28,7 +28,8 @@ export async function PATCH(
 ) {
   const session = await auth();
   if (!session) return Response.json({ error: "Não autenticado" }, { status: 401 });
-  if (!isMestre(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
+  // MESTRE e CAPITAO corrigem dados — cadastrar/remover continua só com o MESTRE.
+  if (!podeEditarMembros(session)) return Response.json({ error: "Sem permissão" }, { status: 403 });
 
   const { userId } = await params;
   const body = (await req.json().catch(() => undefined)) as UpdateBody | undefined;

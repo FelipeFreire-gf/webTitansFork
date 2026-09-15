@@ -877,7 +877,11 @@ function ImportarTxt({ onImported }: { onImported: () => void }) {
 }
 
 const AdminMembros = () => {
-  const { isMestre } = useVisao();
+  const { isMestre, role } = useVisao();
+  // MESTRE e CAPITAO corrigem dados/importam .txt; Gerente de Projeto só vê,
+  // reenvia convite e vê o sinal de abertura — cadastrar e remover são só do MESTRE.
+  const podeEditar = role === "MESTRE" || role === "CAPITAO";
+  const podeReenviarConvite = podeEditar || role === "GERENTE_PROJETO";
   const [membros, setMembros] = useState<Membro[] | null>(null);
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -970,7 +974,9 @@ const AdminMembros = () => {
           <CardDescription>
             {isMestre
               ? "Cadastre membros manualmente ou importe vários de uma vez."
-              : "Consulta ao quadro de membros — só o Mestre cadastra, edita ou remove."}
+              : podeEditar
+                ? "Corrija dados, reenvie convites e importe .txt — cadastrar ou remover membros é só do Mestre."
+                : "Consulta ao quadro de membros e reenvio de convite de senha."}
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -978,9 +984,9 @@ const AdminMembros = () => {
             <Download className="mr-2 h-4 w-4" />
             Baixar .txt
           </Button>
+          {podeEditar && <ImportarTxt onImported={carregar} />}
           {isMestre && (
             <>
-              <ImportarTxt onImported={carregar} />
               <CadastroManualMembro
                 projetos={projetos}
                 onCreated={(membro) => setMembros((prev) => [...(prev ?? []), membro])}
@@ -1011,7 +1017,7 @@ const AdminMembros = () => {
                   <TableHead>Nível</TableHead>
                   <TableHead>Curso / Semestre</TableHead>
                   <TableHead>Projetos</TableHead>
-                  {isMestre && <TableHead className="w-10" />}
+                  {podeReenviarConvite && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1045,7 +1051,7 @@ const AdminMembros = () => {
                         ))}
                       </div>
                     </TableCell>
-                    {isMestre && (
+                    {podeReenviarConvite && (
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {m.convitePendente && (
@@ -1071,15 +1077,17 @@ const AdminMembros = () => {
                               )}
                             </span>
                           )}
-                          <EditarMembroDialog
-                            membro={m}
-                            projetos={projetos}
-                            onUpdated={(atualizado) =>
-                              setMembros((prev) =>
-                                prev?.map((x) => (x.id === atualizado.id ? atualizado : x)) ?? null,
-                              )
-                            }
-                          />
+                          {podeEditar && (
+                            <EditarMembroDialog
+                              membro={m}
+                              projetos={projetos}
+                              onUpdated={(atualizado) =>
+                                setMembros((prev) =>
+                                  prev?.map((x) => (x.id === atualizado.id ? atualizado : x)) ?? null,
+                                )
+                              }
+                            />
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1090,15 +1098,17 @@ const AdminMembros = () => {
                           >
                             <Mail className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDelete(m.id)}
-                            aria-label={`Remover ${m.nome ?? m.email}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {isMestre && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleDelete(m.id)}
+                              aria-label={`Remover ${m.nome ?? m.email}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     )}
