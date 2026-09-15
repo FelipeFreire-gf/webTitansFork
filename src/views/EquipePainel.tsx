@@ -11,6 +11,7 @@ import {
   LogOut,
   Users2,
   ScrollText,
+  MessageSquareHeart,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -27,11 +28,19 @@ import AdminLogs from "@/views/AdminLogs";
 import AvisosPainel from "@/views/AvisosPainel";
 import CalendarioPainel from "@/views/CalendarioPainel";
 import PresencasPainel from "@/views/PresencasPainel";
+import FeedbackPainel from "@/views/FeedbackPainel";
 import StatusSistema from "@/components/equipe/StatusSistema";
 import { VisaoProvider, useVisao, type PapelVisualizacao } from "@/components/equipe/VisaoContext";
 import { ROLE_LABELS, ROLE_ORDER } from "@/lib/roles";
 
-type PainelView = "avisos" | "calendario" | "presencas" | "tarefas" | "membros" | "logs";
+type PainelView =
+  | "avisos"
+  | "calendario"
+  | "presencas"
+  | "tarefas"
+  | "feedback"
+  | "membros"
+  | "logs";
 
 interface ProjetoResumo {
   id: string;
@@ -148,6 +157,8 @@ function EquipePainelConteudo() {
     { id: "calendario" as const, label: "Calendário", icon: CalendarDays },
     { id: "presencas" as const, label: "Presenças", icon: ClipboardCheck },
     { id: "tarefas" as const, label: "Quadro de Tarefas", icon: KanbanSquare },
+    // Visível pra todo mundo autenticado, sem gate de cargo — igual às abas acima.
+    { id: "feedback" as const, label: "Feedback", icon: MessageSquareHeart },
     ...(podeVerMembros
       ? [{ id: "membros" as const, label: "Gerenciar Membros", icon: Users2 }]
       : []),
@@ -213,6 +224,7 @@ function EquipePainelConteudo() {
                 </div>
               )}
 
+              {view === "feedback" && <FeedbackPainel />}
               {view === "membros" && podeVerMembros && <AdminMembros />}
               {view === "logs" && isMestre && <AdminLogs />}
             </div>

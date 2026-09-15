@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-export default function FeedbackPage() {
+export default function FeedbackPainel() {
   const form = useForm<FeedbackFormValues>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: {
@@ -63,17 +63,15 @@ export default function FeedbackPage() {
   ] as const;
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-2xl border-none shadow-none bg-transparent">
-        <CardHeader className="flex flex-col items-center text-center space-y-2">
-          <CardTitle className="text-3xl font-bold tracking-tight">
-            Feedback Anônimo
-          </CardTitle>
-          <CardDescription className="max-w-[500px] text-base">
-            Melhore nossa equipe com sua opinião sincera.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+    <Card>
+      <CardHeader>
+        <CardTitle>Feedback Anônimo</CardTitle>
+        <CardDescription>
+          Melhore nossa equipe com sua opinião sincera.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="mx-auto max-w-2xl">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {scaleQuestions.map((q) => (
@@ -145,8 +143,8 @@ export default function FeedbackPage() {
               </Button>
             </form>
           </Form>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

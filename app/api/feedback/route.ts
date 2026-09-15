@@ -1,11 +1,14 @@
+import { auth } from "@/lib/server/auth";
 import { enviarEmail } from "@/lib/server/email";
 import { excedeuLimite } from "@/lib/server/rate-limit";
 import { feedbackSchema } from "@/lib/feedback-schema";
 
-// Formulário público de /feedback (anônimo, sem login). O e-mail é a única
-// forma de o feedback chegar em algum lugar — não há persistência em banco —
-// por isso, diferente de outros envios "best-effort" do projeto, aqui uma
-// falha do Resend vira erro pro cliente em vez de um post declarado sem base.
+// Formulário de feedback do painel de membro (aba "Feedback" em /equipe) —
+// exige login (qualquer cargo), mas o conteúdo em si continua anônimo: não
+// gravamos quem enviou nem junto do e-mail. O e-mail é a única forma de o
+// feedback chegar em algum lugar (não há persistência em banco), por isso,
+// diferente de outros envios "best-effort" do projeto, uma falha do Resend
+// vira erro pro cliente em vez de um post declarado sem base.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -32,6 +35,9 @@ function ipDoRequest(req: Request): string {
 }
 
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session) return Response.json({ error: "Não autenticado" }, { status: 401 });
+
   const ip = ipDoRequest(req);
   if (excedeuLimite(`feedback:${ip}`, RATE_LIMIT_TENTATIVAS, RATE_LIMIT_JANELA_MS)) {
     return Response.json(
