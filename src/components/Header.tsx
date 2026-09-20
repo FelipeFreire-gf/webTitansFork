@@ -23,10 +23,9 @@ const Header = () => {
     { name: "Apoiar", href: "/#apoiar" },
   ];
 
-  // Impressão 3D tirada do menu por enquanto — a página continua no ar em
-  // /servicos/impressao-3d, só não tem mais link nenhum apontando pra ela.
   const servicos = [
     { name: "Imprima seu PDF", href: "/impressao" },
+    { name: "Impressão 3D", href: "/servicos/impressao-3d" },
   ];
 
   return (
