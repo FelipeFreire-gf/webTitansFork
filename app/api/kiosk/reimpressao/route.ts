@@ -3,10 +3,9 @@ import { resgatarCodigoReimpressao } from "@/lib/server/reimpressao-tokens";
 import { excedeuLimite } from "@/lib/server/rate-limit";
 
 // Resgate do código de reimpressão de uso único no totem. Server-side
-// (service_role), em route SEPARADA de /api/kiosk/pedido (consulta) e
-// /api/kiosk/help (chamados) — de propósito: se o resgate compartilhasse
-// route com a consulta, respostas diferenciadas virariam um oráculo de força
-// bruta de códigos (design D5).
+// (service_role), em route SEPARADA de /api/kiosk/pedido (consulta) — de
+// propósito: se o resgate compartilhasse route com a consulta, respostas
+// diferenciadas virariam um oráculo de força bruta de códigos (design D5).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 

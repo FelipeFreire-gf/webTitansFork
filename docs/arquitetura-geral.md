@@ -337,8 +337,9 @@ Interface full-screen touch para quem imprime na sede:
 - **Consulta por protocolo** — `GET /api/kiosk/pedido?protocolo=XXXXXXXX`
   (server-side, `service_role`, resolve o intervalo de UUID pelo prefixo) devolve
   status + posição na fila.
-- **Chamar a equipe** — `POST /api/kiosk/help` grava em `chamados_ajuda`
-  (rate-limit de 5 min por protocolo+categoria) e notifica o Telegram.
+- **Ajuda** — o overlay oferece apenas o grupo da equipe no Telegram (QR code).
+  A rota `/api/kiosk/help` e os botões de chamado foram removidos; a tabela
+  `chamados_ajuda` continua no banco, mas o app não a grava mais.
 - **Código de reimpressão** — `POST /api/kiosk/reimpressao` resgata um token de
   uso único (`R-XXXXXXXX`), rate-limit por IP (5/5 min), mensagens genéricas
   anti-oráculo.
@@ -638,9 +639,9 @@ Registros do botão "Chamar a equipe" do kiosk.
 | `resolvido_em` | `timestamptz` | sim | — | Marcação manual de resolução (não usada pela UI atual). |
 
 **Índice**: `chamados_ajuda_recentes_idx` em `(criado_em desc)` — para o
-rate-limit da API (chamado idêntico em 5 min é rejeitado).
-**RLS**: habilitado **sem policy** → acesso `anon` negado; só a Route Handler
-`/api/kiosk/help` (`service_role`) escreve/lê.
+rate-limit da API (legado). **Não é mais escrita pelo app** (a rota
+`/api/kiosk/help` foi removida; a ajuda do totem só oferece o Telegram).
+**RLS**: habilitado **sem policy** → acesso `anon` negado.
 
 ---
 
@@ -723,9 +724,8 @@ antes da chamada a `/api/servicos/impressao-3d`.
 **Notificação**: a Route Handler dispara, em paralelo, um aviso no Telegram
 (`TELEGRAM_CHAT_ID`) e um e-mail pra equipe (`PEDIDOS_3D_EMAIL_EQUIPE`, via
 Resend — mesmo provedor do convite de membro em `src/lib/server/email.ts`) a
-cada novo pedido, ambos best-effort (mesmo padrão de
-`chamados_ajuda`/`/api/kiosk/help`) — a persistência nunca falha por causa da
-notificação. O e-mail de pedidos `ARQUIVOS` anexa os arquivos do bucket
+cada novo pedido, ambos best-effort (mesmo padrão dos avisos do worker) — a
+persistência nunca falha por causa da notificação. O e-mail de pedidos `ARQUIVOS` anexa os arquivos do bucket
 `arquivos-3d` (até 20 MB somados; acima disso, só os caminhos).
 **Sem automação de orçamento**: `qualidade`/dimensões não geram preço nem
 tempo de impressão automaticamente; a equipe cota manualmente a partir dos
