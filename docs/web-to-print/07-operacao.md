@@ -112,6 +112,32 @@ o pedido vira `ERRO` "nada impresso" (re-filar para `PAGO` é seguro). Isso depe
 > Pedidos presos em `IMPRIMINDO` voltam sozinhos para `PAGO` só após `STUCK_TIMEOUT`
 > (padrão 15 min). Para reprocessar antes, mude o status para `PAGO` manualmente.
 
+## Pagamento aprovado que não aparece na fila
+
+Sintoma: o cliente pagou (o PIX consta no Mercado Pago), mas o pedido não está na fila nem
+em `fila_impressao`. Quem marca `PAGO` é o webhook do MP, no servidor — o navegador do
+cliente não participa. Se o webhook não chega ou falha, a linha fica em
+`AGUARDANDO_PAGAMENTO` e a **regra 1 do `cleanup-fila` apaga a linha e o PDF após 1 h**,
+sem consultar o MP. Por isso a evidência no banco some: investigue **logo**, antes de 1 h.
+
+1. **Painel do MP** → o pagamento → anote o `external_reference` (UUID do pedido) e veja o
+   histórico de notificações do webhook (status HTTP de cada tentativa).
+2. **Logs da Vercel** em `/api/webhooks/mercadopago` no horário do pagamento. Procure
+   `[webhook] assinatura rejeitada` (401), `MERCADOPAGO_WEBHOOK_SECRET ausente` (500),
+   `Falha ao buscar pagamento no MP` (502), `Erro UPDATE PAGO` ou timeout.
+3. **Supabase**:
+   `select id, status, created_at, mp_payment_id from fila_impressao where id = '<uuid>';`
+   e, nos logs da Edge Function `cleanup-fila`, se `orfaos_removidos` subiu nesse horário.
+4. **Destino do webhook**: `PUBLIC_BASE_URL` na Vercel (produção) deve ser
+   `https://www.roboticstitans.com.br`, e
+   `curl -i -X POST https://www.roboticstitans.com.br/api/webhooks/mercadopago` deve
+   responder 400/401 — nunca 307/308 (o MP não segue redirect em POST).
+5. **Casos antigos** (linha já apagada): o painel do MP é a única fonte; o
+   `external_reference` identifica o pedido, mas o PDF já foi removido — peça um novo envio.
+
+Correção candidata, a decidir após o diagnóstico: antes de apagar um órfão com
+`mp_payment_id`, o `cleanup-fila` consulta o MP e, se aprovado, marca `PAGO` em vez de apagar.
+
 ## Alterar os preços
 
 O preço de impressão é por **faixa de volume**: o total `páginas × cópias` do pedido escolhe

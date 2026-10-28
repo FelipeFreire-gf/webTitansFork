@@ -168,19 +168,29 @@ export function ConfiguracaoImpressao({
           )}
         </div>
 
-        <div className="flex justify-between">
-          <Button variant="outline" onClick={onVoltar} disabled={enviando}>
-            Voltar
-          </Button>
-          <Button
-            onClick={() => {
-              if (quantidadeCopias === null || valor === null) return;
-              onConfirmar({ modoCor: MODO_COR, quantidadeCopias, valorCentavos: valor });
-            }}
-            disabled={!faixas || enviando || quantidadeCopias === null}
-          >
-            {enviando ? "Enviando…" : "Pagar com PIX"}
-          </Button>
+        <div className="space-y-3">
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={onVoltar} disabled={enviando}>
+              Voltar
+            </Button>
+            <Button
+              onClick={() => {
+                if (quantidadeCopias === null || valor === null) return;
+                onConfirmar({ modoCor: MODO_COR, quantidadeCopias, valorCentavos: valor });
+              }}
+              disabled={!faixas || enviando || quantidadeCopias === null}
+            >
+              {enviando ? "Enviando…" : "Pagar com PIX"}
+            </Button>
+          </div>
+
+          {/* Sair para o app do banco durante o envio congela a aba no
+              Android e derruba o upload. */}
+          {enviando && (
+            <p className="text-sm text-muted-foreground text-center">
+              Enviando o arquivo… mantenha esta tela aberta até o QR Code aparecer.
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
