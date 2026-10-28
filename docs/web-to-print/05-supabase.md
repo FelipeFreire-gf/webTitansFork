@@ -56,6 +56,19 @@ preço dela vale para **todas** as páginas. Com faixas 1 → R$ 0,50, 20 → R$
 > **`config_precos` (legado).** Continua no banco, mas o código **não a usa mais**; foi
 > mantida só até o deploy. Será removida numa migration posterior.
 
+## `falhas_checkout` (`0013`)
+
+Telemetria das falhas do checkout: cada erro de leitura do arquivo, upload, registro do
+pedido ou geração do PIX vira uma linha com o código da etapa (`ENVIO-REDE`, `ENVIO-500`,
+`PEDIDO`, `PIX-502`, `LEITURA`, `INESPERADO`…), a mensagem do erro, o user-agent e — quando
+o navegador expõe as Client Hints — o modelo e a versão do Android. Falhas de upload que
+ainda serão repetidas têm `tentativa` (1 ou 2); a falha final, que chegou ao cliente, tem
+`tentativa = null`.
+
+- Escrita só via `POST /api/telemetria/falha-checkout` (service_role, rate-limit por IP);
+  RLS sem policy, como `chamados_ajuda`.
+- Retenção de 90 dias (regra 5 do `cleanup-fila`).
+
 ## Bucket `pdfs-impressao` (privado)
 
 - Criado com `public = false` — **não** é servível por URL pública.

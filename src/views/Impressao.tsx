@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -16,33 +16,86 @@ import { TelaSucesso } from "@/components/impressao/TelaSucesso";
 import { BotaoOndeRetirar } from "@/components/impressao/BotaoOndeRetirar";
 import { StatusImpressora } from "@/components/impressao/StatusImpressora";
 import { supabase } from "@/lib/supabase";
+import { protocoloDoPedido } from "@/lib/protocolo";
+import {
+  lerPedidoEmAndamento,
+  limparPedidoEmAndamento,
+  marcarPedidoConcluido,
+  pixAindaValido,
+  salvarPedidoEmAndamento,
+  type DadosPagamento,
+  type PedidoEmAndamento,
+} from "@/lib/pedido-em-andamento";
 import type { ArquivoSelecionado } from "@/lib/pdf-utils";
-import type { ModoCor } from "@/lib/types";
+import { pagamentoConfirmado, type ModoCor, type StatusPedido } from "@/lib/types";
 
-type Passo = "UPLOAD" | "CONFIG" | "PAGAMENTO" | "SUCESSO" | "TIMEOUT";
+// VERIFICANDO: reload com um PIX já expirado guardado — consulta o status uma
+// vez antes de decidir entre o sucesso e um pedido novo.
+type Passo = "UPLOAD" | "CONFIG" | "PAGAMENTO" | "SUCESSO" | "TIMEOUT" | "VERIFICANDO";
 
-type DadosPagamento = {
-  qr_code_base64: string;
-  qr_code_copia_cola: string;
-  expiration_date_to: string | null;
-  mp_payment_id: string;
-  // Valor e contagem autoritativos calculados pelo servidor (create-pix).
-  valor_centavos: number;
-  num_paginas: number;
-};
+function passoRetomado(pedido: PedidoEmAndamento | null): Passo {
+  if (!pedido) return "UPLOAD";
+  if (pedido.concluidoEm != null) return "SUCESSO";
+  return pixAindaValido(pedido.pagamento) ? "PAGAMENTO" : "VERIFICANDO";
+}
 
 const Impressao = () => {
-  const [passo, setPasso] = useState<Passo>("UPLOAD");
+  // Pedido com PIX gerado antes de um reload (ver pedido-em-andamento.ts).
+  // A página só renderiza no cliente (ssr:false), então ler o localStorage no
+  // inicializador é seguro.
+  const [retomado] = useState(lerPedidoEmAndamento);
+  const [passo, setPasso] = useState<Passo>(() => passoRetomado(retomado));
   // A lista de arquivos escolhidos vive aqui (e não dentro do UploadPDF) para
   // sobreviver ao ir e voltar entre UPLOAD e CONFIG; `file` é o PDF final do
-  // pedido — o original quando há um arquivo só, o mesclado quando há vários.
+  // pedido — a cópia em memória quando há um arquivo só, o mesclado quando há
+  // vários. Nunca o File do seletor, que ainda aponta para o aparelho.
   const [arquivos, setArquivos] = useState<ArquivoSelecionado[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [numPaginas, setNumPaginas] = useState<number>(0);
-  const [valorCentavos, setValorCentavos] = useState<number>(0);
-  const [pedidoId, setPedidoId] = useState<string | null>(null);
-  const [pagamento, setPagamento] = useState<DadosPagamento | null>(null);
+  const [valorCentavos, setValorCentavos] = useState<number>(
+    retomado?.pagamento.valor_centavos ?? 0
+  );
+  const [pedidoId, setPedidoId] = useState<string | null>(retomado?.pedidoId ?? null);
+  const [pagamento, setPagamento] = useState<DadosPagamento | null>(
+    retomado?.pagamento ?? null
+  );
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    if (passo !== "VERIFICANDO" || !pedidoId) return;
+    let ativo = true;
+    void supabase
+      .from("fila_impressao")
+      .select("status")
+      .eq("id", pedidoId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!ativo) return;
+        if (pagamentoConfirmado(data?.status as StatusPedido | undefined)) {
+          marcarPedidoConcluido();
+          setPasso("SUCESSO");
+          return;
+        }
+        // Não pago (ou já removido pela limpeza): pedido novo. Numa falha de
+        // rede o registro fica, para conferir no próximo acesso.
+        if (!error) limparPedidoEmAndamento();
+        setPasso("UPLOAD");
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [passo, pedidoId]);
+
+  function novoPedido() {
+    limparPedidoEmAndamento();
+    setArquivos([]);
+    setFile(null);
+    setNumPaginas(0);
+    setValorCentavos(0);
+    setPedidoId(null);
+    setPagamento(null);
+    setPasso("UPLOAD");
+  }
 
   async function confirmarConfiguracao(args: {
     modoCor: ModoCor;
@@ -56,10 +109,7 @@ const Impressao = () => {
       const safeName = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
       const pdfPath = `${tempId}/${safeName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("pdfs-impressao")
-        .upload(pdfPath, file, { contentType: "application/pdf", upsert: false });
-      if (uploadError) throw uploadError;
+      await enviarPDF(pdfPath, file);
 
       // valor_centavos NÃO é enviado: o servidor (create-pix) é a autoridade
       // de preço, calculando a partir da contagem real de páginas do PDF.
@@ -74,18 +124,31 @@ const Impressao = () => {
         })
         .select("id")
         .single();
-      if (insertError) throw insertError;
+      if (insertError) {
+        throw new ErroCheckout(
+          "Não foi possível registrar o pedido. Tente novamente.",
+          "PEDIDO",
+          insertError
+        );
+      }
 
       setPedidoId(pedido.id);
 
-      const resp = await fetch("/api/payments/create-pix", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pedidoId: pedido.id }),
-      });
+      // Sem nova tentativa aqui: o create-pix está no caminho do pagamento.
+      let resp: Response;
+      try {
+        resp = await fetch("/api/payments/create-pix", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pedidoId: pedido.id }),
+        });
+      } catch (err) {
+        throw new ErroCheckout(MSG_CONEXAO, "PIX-REDE", err);
+      }
       if (!resp.ok) {
+        // As mensagens de erro do create-pix já vêm em português.
         const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error ?? "Falha ao gerar PIX");
+        throw new ErroCheckout(body.error ?? "Falha ao gerar PIX", `PIX-${resp.status}`);
       }
       const dados = (await resp.json()) as DadosPagamento;
       // O preço pode ter mudado (bot do Telegram) desde que a configuração
@@ -97,10 +160,21 @@ const Impressao = () => {
       setValorCentavos(dados.valor_centavos);
       setNumPaginas(dados.num_paginas);
       setPagamento(dados);
+      salvarPedidoEmAndamento({ pedidoId: pedido.id, pagamento: dados, concluidoEm: null });
       setPasso("PAGAMENTO");
     } catch (err) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Erro inesperado.");
+      registrarFalha({
+        codigo: err instanceof ErroCheckout ? err.codigo : "INESPERADO",
+        causa: err instanceof ErroCheckout ? err.causa : err,
+        tamanhoBytes: file.size,
+        numPaginas,
+      });
+      if (err instanceof ErroCheckout) {
+        toast.error(err.message, { description: `Código: ${err.codigo}` });
+      } else {
+        toast.error("Erro inesperado. Tente novamente.");
+      }
     } finally {
       setEnviando(false);
     }
@@ -177,12 +251,34 @@ const Impressao = () => {
                 qrCodeCopiaCola={pagamento.qr_code_copia_cola}
                 expirationDateTo={pagamento.expiration_date_to}
                 valorCentavos={valorCentavos}
-                onPago={() => setPasso("SUCESSO")}
-                onTimeout={() => setPasso("TIMEOUT")}
+                onPago={() => {
+                  marcarPedidoConcluido();
+                  setPasso("SUCESSO");
+                }}
+                onTimeout={() => {
+                  limparPedidoEmAndamento();
+                  setPasso("TIMEOUT");
+                }}
+                onNovoPedido={novoPedido}
               />
             )}
 
-            {passo === "SUCESSO" && pedidoId && <TelaSucesso pedidoId={pedidoId} />}
+            {passo === "VERIFICANDO" && (
+              <Card>
+                <CardContent className="p-8 flex items-center justify-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Conferindo seu último pedido…
+                </CardContent>
+              </Card>
+            )}
+
+            {passo === "SUCESSO" && pedidoId && (
+              <TelaSucesso
+                pedidoId={pedidoId}
+                onNovoPedido={novoPedido}
+                onSair={limparPedidoEmAndamento}
+              />
+            )}
 
             {passo === "TIMEOUT" && (
               <Card>
@@ -193,6 +289,14 @@ const Impressao = () => {
                     aguarde alguns minutos e nos contate com o protocolo. Caso contrário,
                     inicie um novo pedido.
                   </p>
+                  {pedidoId && (
+                    <div className="bg-muted/30 rounded-lg py-3">
+                      <p className="text-xs text-muted-foreground">Protocolo do pedido</p>
+                      <p className="text-xl font-mono font-bold tracking-widest">
+                        {protocoloDoPedido(pedidoId)}
+                      </p>
+                    </div>
+                  )}
                   <Button asChild>
                     <Link href="/">Voltar ao início</Link>
                   </Button>

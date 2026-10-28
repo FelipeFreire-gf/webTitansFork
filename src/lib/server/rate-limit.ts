@@ -7,6 +7,11 @@
 // não um serviço público de alto tráfego.
 const tentativasPorChave = new Map<string, number[]>();
 
+// IP do cliente atrás do proxy da Vercel — chave usual do rate-limit.
+export function ipDoRequest(req: Request): string {
+  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "desconhecido";
+}
+
 export function excedeuLimite(chave: string, limite: number, janelaMs: number): boolean {
   const agora = Date.now();
   const tentativas = (tentativasPorChave.get(chave) ?? []).filter(
