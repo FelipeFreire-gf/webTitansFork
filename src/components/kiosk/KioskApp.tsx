@@ -21,7 +21,7 @@ const IDLE_MS = 180_000;
 
 export default function KioskApp() {
   const { itens } = useFilaPublica();
-  const { estado, detalhes, offline } = useImpressoraStatus();
+  const { estado, offline } = useImpressoraStatus();
 
   // Só um overlay aberto por vez.
   const [overlay, setOverlay] = useState<OverlayId | null>(null);
@@ -81,7 +81,7 @@ export default function KioskApp() {
 
   return (
     <div className="flex h-full w-full flex-col gap-4 p-5">
-      <FaixaImpressora estado={estado} detalhes={detalhes} offline={offline} />
+      <FaixaImpressora estado={estado} offline={offline} />
 
       <main className="flex min-h-0 flex-1 flex-col gap-4">
         {imprimindo && <ImprimindoAgora item={imprimindo} />}
