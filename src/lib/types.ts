@@ -23,4 +23,3 @@ export type Pedido = {
   printed_at: string | null;
 };
 
-export type Precos = Record<ModoCor, number>;

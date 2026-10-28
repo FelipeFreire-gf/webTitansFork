@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { fetchPrecos, calcularValor, formatBRL } from "@/lib/pricing";
-import type { ModoCor, Precos } from "@/lib/types";
+import { fetchFaixas, formatBRL } from "@/lib/pricing";
+import { calcularPreco, proximaFaixa, type FaixaPreco } from "@/lib/faixas-preco";
+import type { ModoCor } from "@/lib/types";
 
 // A HP 135w é monocromática, então o checkout oferece apenas P&B.
 const MODO_COR: ModoCor = "PB";
@@ -45,7 +46,7 @@ export function ConfiguracaoImpressao({
   onConfirmar,
   onVoltar,
 }: Props) {
-  const [precos, setPrecos] = useState<Precos | null>(null);
+  const [faixas, setFaixas] = useState<FaixaPreco[] | null>(null);
   const [textoCopias, setTextoCopias] = useState(String(QUANTIDADE_MINIMA));
   const quantidadeCopias = quantidadeDoTexto(textoCopias);
 
@@ -55,16 +56,24 @@ export function ConfiguracaoImpressao({
     setTextoCopias(String(nova));
   }
 
+  // Busca a cada abertura da tela: uma mudança feita pelo bot vale já no
+  // próximo pedido. O valor aqui é estimativa — quem cobra é o create-pix.
   useEffect(() => {
-    fetchPrecos()
-      .then(setPrecos)
+    fetchFaixas(MODO_COR)
+      .then(setFaixas)
       .catch(() => toast.error("Não foi possível carregar os preços."));
   }, []);
 
-  const valor =
-    precos && quantidadeCopias !== null
-      ? calcularValor(numPaginas, quantidadeCopias, MODO_COR, precos)
+  const preco =
+    faixas && quantidadeCopias !== null
+      ? calcularPreco(numPaginas, quantidadeCopias, faixas)
       : null;
+  const valor = preco?.valorCentavos ?? null;
+  // Com o campo vazio, mostra o preço da faixa base.
+  const precoPorPagina =
+    preco?.faixa.valor_centavos_por_pagina ?? faixas?.[0]?.valor_centavos_por_pagina;
+  const temDescontoPorVolume = (faixas?.length ?? 0) > 1;
+  const proxima = preco && faixas ? proximaFaixa(preco.totalPaginas, faixas) : null;
 
   return (
     <Card>
@@ -84,9 +93,9 @@ export function ConfiguracaoImpressao({
           <Label>Modo de cor</Label>
           <p className="font-normal">
             Preto e branco
-            {precos && (
+            {precoPorPagina != null && (
               <span className="text-muted-foreground ml-2">
-                ({formatBRL(precos.PB)}/página)
+                ({formatBRL(precoPorPagina)}/página)
               </span>
             )}
           </p>
@@ -137,11 +146,26 @@ export function ConfiguracaoImpressao({
           </div>
         </div>
 
-        <div className="border-t border-border pt-4 flex items-baseline justify-between">
-          <span className="text-sm text-muted-foreground">Total</span>
-          <span className="text-3xl font-bold text-titans-orange">
-            {valor === null ? "—" : formatBRL(valor)}
-          </span>
+        <div className="border-t border-border pt-4 space-y-1">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-muted-foreground">Total</span>
+            <span className="text-3xl font-bold text-titans-orange">
+              {valor === null ? "—" : formatBRL(valor)}
+            </span>
+          </div>
+          {/* Faixas contam páginas × cópias; o preço da faixa vale para todas. */}
+          {temDescontoPorVolume && preco && preco.faixa.a_partir_de > 1 && (
+            <p className="text-sm text-muted-foreground text-right">
+              Desconto por volume: a partir de {preco.faixa.a_partir_de} páginas
+              impressas.
+            </p>
+          )}
+          {temDescontoPorVolume && proxima && (
+            <p className="text-sm text-muted-foreground text-right">
+              Com {proxima.a_partir_de} páginas impressas ou mais (páginas × cópias),
+              sai {formatBRL(proxima.valor_centavos_por_pagina)}/página.
+            </p>
+          )}
         </div>
 
         <div className="flex justify-between">
@@ -153,7 +177,7 @@ export function ConfiguracaoImpressao({
               if (quantidadeCopias === null || valor === null) return;
               onConfirmar({ modoCor: MODO_COR, quantidadeCopias, valorCentavos: valor });
             }}
-            disabled={!precos || enviando || quantidadeCopias === null}
+            disabled={!faixas || enviando || quantidadeCopias === null}
           >
             {enviando ? "Enviando…" : "Pagar com PIX"}
           </Button>

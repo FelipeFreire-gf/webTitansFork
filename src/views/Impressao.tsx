@@ -88,6 +88,11 @@ const Impressao = () => {
         throw new Error(body.error ?? "Falha ao gerar PIX");
       }
       const dados = (await resp.json()) as DadosPagamento;
+      // O preço pode ter mudado (bot do Telegram) desde que a configuração
+      // abriu, ou a contagem do servidor divergir da local: vale a do servidor.
+      if (dados.valor_centavos !== args.valorCentavos) {
+        toast.info("O valor foi atualizado. Confira antes de pagar.");
+      }
       // Exibe o valor e a contagem autoritativos vindos do servidor.
       setValorCentavos(dados.valor_centavos);
       setNumPaginas(dados.num_paginas);
