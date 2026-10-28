@@ -17,6 +17,15 @@ const QUANTIDADE_MINIMA = 1;
 // Três dígitos: trava contra um zero a mais digitado sem querer.
 const QUANTIDADE_MAXIMA = 999;
 
+// −/+: no toque, o :hover do Tailwind 3 fica preso depois de soltar e o botão
+// continua colorido. Em telas sem hover ele é anulado e a cor aparece só
+// enquanto o dedo pressiona; o encolher rápido e a volta suave (duration-300
+// do Button) dão o retorno do clique.
+const CLASSE_BOTAO_COPIAS =
+  "[-webkit-tap-highlight-color:transparent] active:scale-90 active:duration-75 " +
+  "[@media(hover:none)]:hover:bg-background [@media(hover:none)]:hover:text-inherit " +
+  "[@media(hover:none)]:active:bg-accent [@media(hover:none)]:active:text-accent-foreground";
+
 // O campo guarda o texto digitado e a quantidade é derivada dele: vazio (ou 0)
 // vale null enquanto a pessoa digita. Antes o vazio virava 1 a cada tecla, e
 // quem apagava o "1" para digitar outro número não conseguia trocar.
@@ -108,6 +117,7 @@ export function ConfiguracaoImpressao({
               type="button"
               variant="outline"
               size="icon"
+              className={CLASSE_BOTAO_COPIAS}
               aria-label="Diminuir cópias"
               disabled={enviando || (quantidadeCopias ?? QUANTIDADE_MINIMA) <= QUANTIDADE_MINIMA}
               onClick={() => somarCopias(-1)}
@@ -137,6 +147,7 @@ export function ConfiguracaoImpressao({
               type="button"
               variant="outline"
               size="icon"
+              className={CLASSE_BOTAO_COPIAS}
               aria-label="Aumentar cópias"
               disabled={enviando || (quantidadeCopias ?? 0) >= QUANTIDADE_MAXIMA}
               onClick={() => somarCopias(1)}
