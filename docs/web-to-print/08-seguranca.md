@@ -55,7 +55,7 @@ Toda transição de pagamento e de impressão é, portanto, exclusiva do servido
 A mudança companheira `harden-web-to-print-security` (já em produção) tratou:
 
 - **Valor e páginas no servidor** ✅ — o `create-pix` baixa o PDF, reconta as páginas com
-  `pdf-lib` e recalcula `valor_centavos` a partir de `config_precos`; o cliente não envia
+  `pdf-lib` e recalcula `valor_centavos` a partir de `faixas_preco`; o cliente não envia
   mais o preço (a RLS exige `valor_centavos IS NULL`). PDF inválido → 422 sem cobrar.
   Capability `print-payment-integrity`.
 - **Limpeza automática** ✅ — Edge Function `cleanup-fila` agendada por pg_cron: órfão não

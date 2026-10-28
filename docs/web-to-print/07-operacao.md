@@ -112,6 +112,43 @@ o pedido vira `ERRO` "nada impresso" (re-filar para `PAGO` é seguro). Isso depe
 > Pedidos presos em `IMPRIMINDO` voltam sozinhos para `PAGO` só após `STUCK_TIMEOUT`
 > (padrão 15 min). Para reprocessar antes, mude o status para `PAGO` manualmente.
 
+## Alterar os preços
+
+O preço de impressão é por **faixa de volume**: o total `páginas × cópias` do pedido escolhe
+uma faixa, e o preço por página dela vale para todas as páginas. Quem administra altera as
+faixas pelo bot do Telegram, sem deploy. Só funciona para o modo P&B.
+
+Só usuários listados em `TELEGRAM_ADMIN_IDS` (os mesmos do `/reimprimir`) podem usar os
+comandos; qualquer outra pessoa é ignorada em silêncio.
+
+| Comando | O que faz |
+| --- | --- |
+| `/precos` | Mostra a tabela de faixas atual. |
+| `/faixa <a partir de N páginas> <valor por página>` | Cria ou atualiza a faixa. Ex.: `/faixa 20 0,40` (vírgula ou ponto; "R$" opcional). `/faixa 1 0,50` muda o preço base. Valor entre R$ 0,01 e R$ 10,00. Responde com a tabela atualizada e **avisa** (sem bloquear) se uma faixa maior ficar mais cara que a anterior. |
+| `/remover_faixa <N>` | Remove a faixa que começa em N. Recusa N = 1 (preço base). |
+
+Exemplo: com as faixas 1 → R$ 0,50, 20 → R$ 0,40 e 100 → R$ 0,30, um pedido de 19 páginas
+custa R$ 9,50, de 20 páginas R$ 8,00 e de 150 páginas R$ 45,00.
+
+A mudança vale a partir do **próximo PIX gerado** (o `create-pix` lê a tabela na hora de
+cobrar; checkout e totem releem ao abrir). Se o preço mudar com a tela do cliente já
+aberta, ele vê o aviso "O valor foi atualizado. Confira antes de pagar.".
+
+**Passo manual (uma vez):** registrar os comandos no BotFather (`/setcommands`, escolha o
+bot e cole). O `/setcommands` substitui a lista inteira, por isso ela repete os comandos de
+reimpressão:
+
+```text
+reimprimir - Reimprime um pedido: /reimprimir <protocolo>
+gerar_codigo - Gera código de reimpressão: /gerar_codigo <protocolo>
+precos - Mostra a tabela de preços
+faixa - Cria/atualiza uma faixa: /faixa 20 0,40
+remover_faixa - Remove uma faixa: /remover_faixa 20
+```
+
+> **Alternativa:** editar a tabela `faixas_preco` direto no Table Editor do Supabase também
+> funciona. Mantenha sempre a faixa base `a_partir_de = 1`, senão o `create-pix` responde 500.
+
 ## Monitoramento no dia a dia
 
 - **Logs ao vivo:** `journalctl -u print-worker -f`.

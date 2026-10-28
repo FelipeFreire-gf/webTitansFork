@@ -14,14 +14,15 @@ acompanhando o status. **Não** processa pagamento nem imprime, e só usa a anon
 | --- | --- |
 | `app/impressao/page.tsx` + `src/views/Impressao.tsx` | Rota do App Router (wrapper `"use client"`) + a view que orquestra a máquina de passos (`UPLOAD → CONFIG → PAGAMENTO → SUCESSO`/`TIMEOUT`) e faz o upload + criação do pedido + chamada do PIX. |
 | `src/components/impressao/UploadPDF.tsx` | Seleção/drag-drop de **um ou mais** PDFs, lista ordenável, validação, contagem de páginas e mesclagem. |
-| `src/components/impressao/ConfiguracaoImpressao.tsx` | Escolha de modo de cor e exibição do preço. |
+| `src/components/impressao/ConfiguracaoImpressao.tsx` | Escolha de modo de cor, cópias e exibição do preço por faixa de volume. |
 | `src/components/impressao/TelaPagamento.tsx` | Mostra QR Code, Copia e Cola, timer, e aguarda confirmação. |
 | `src/components/impressao/TelaSucesso.tsx` | Tela final com o protocolo (8 primeiros caracteres do UUID). |
 | `src/lib/pdf-utils.ts` | `validarArquivoPDF` (tipo + 30 MB), `contarPaginas` (pdfjs-dist), `validarSelecao` (lista) e `mesclarPDFs` (pdf-lib). |
-| `src/lib/pricing.ts` | `fetchPrecos`, `calcularValor`, `formatBRL`. |
+| `src/lib/faixas-preco.ts` | Regra de preço pura (cliente e servidor): `calcularPreco`, `proximaFaixa`, `intervalosDasFaixas`, `temFaixaBase`, `ordenarFaixas`, `formatBRL`. |
+| `src/lib/pricing.ts` | `fetchFaixas(modo)` (lê `faixas_preco`) e re-exporta `formatBRL`. |
 | `src/lib/supabase.ts` | Cliente Supabase do navegador (anon key, sem sessão persistida). |
 | `src/hooks/usePedidoStatus.ts` | Realtime + polling do status do pedido. |
-| `src/lib/types.ts` | `ModoCor`, `StatusPedido`, `Pedido`, `Precos`. |
+| `src/lib/types.ts` | `ModoCor`, `StatusPedido`, `Pedido`. |
 
 ## Fluxo, passo a passo
 
@@ -65,11 +66,19 @@ acompanhando o status. **Não** processa pagamento nem imprime, e só usa a anon
 
 ### 3. Configuração (`ConfiguracaoImpressao`)
 
-- No mount, `fetchPrecos()` lê `config_precos` do Supabase (linhas `PB` e `COLORIDO`).
+- A cada abertura da tela, `fetchFaixas(modo)` lê as faixas de `faixas_preco` do Supabase
+  (ordenadas por `a_partir_de`), então um preço alterado pelo bot aparece sem recarregar o app.
 - "Total de páginas" é o total do PDF **já mesclado** — a soma de todos os arquivos do
   pedido —, e a legenda indica quantos arquivos foram juntados.
-- O total é `calcularValor(numPaginas, modo, precos) = numPaginas * precos[modo]`, em
-  centavos, recalculado ao trocar o modo. Exibição via `formatBRL` (`Intl` pt-BR).
+- O total é `calcularPreco(numPaginas, copias, faixas)`: o total impresso
+  (`páginas × cópias`, a impressão é só frente) escolhe **uma** faixa, e o preço por página
+  dela vale para **todas** as páginas. Resultado em centavos, recalculado ao trocar modo ou
+  cópias. Exibição via `formatBRL` (`Intl` pt-BR).
+- A tela mostra o preço por página aplicado; quando uma faixa acima da base vale, a dica
+  "Desconto por volume: a partir de N páginas impressas"; e, havendo uma próxima faixa,
+  "Com N páginas impressas ou mais (páginas × cópias), sai R$ X/página".
+- O campo de cópias aceita digitação livre (pode ficar vazio enquanto se digita e volta a 1
+  ao sair do campo), tem botões − e + e máximo de 999.
 - "Pagar com PIX" devolve `{ modoCor, valorCentavos }` para a página.
 
 ### 4. Criação do pedido + PIX (`Impressao.tsx → confirmarConfiguracao`)
@@ -85,7 +94,9 @@ acompanhando o status. **Não** processa pagamento nem imprime, e só usa a anon
    `num_paginas` **autoritativos do servidor**) leva ao passo `PAGAMENTO`.
 
 Se qualquer passo falhar, um toast mostra o erro e o cliente permanece na configuração
-(nenhum pedido "meio-criado" avança).
+(nenhum pedido "meio-criado" avança). Se o `valor_centavos` devolvido pelo servidor diferir
+da estimativa da tela (ex.: o preço mudou pelo bot depois que a tela abriu), `Impressao.tsx`
+mostra o toast "O valor foi atualizado. Confira antes de pagar.".
 
 ### 5. Pagamento (`TelaPagamento`)
 
@@ -119,7 +130,7 @@ O status efetivo é `realtimeStatus ?? query.data` — o que chegar primeiro.
   impressos em tons de cinza (com aviso no log do worker).
 - **O preço é autoridade do servidor.** A tela de configuração mostra apenas uma
   *estimativa*; o cliente não envia `valor_centavos` no INSERT. O `create-pix` reconta as
-  páginas do PDF e recalcula o valor (ver [04](04-pagamento-pix.md) e a capability
+  páginas do PDF e recalcula o valor pelas faixas de `faixas_preco` (ver [04](04-pagamento-pix.md) e a capability
   `print-payment-integrity`).
 - **Por que a mesclagem acontece no cliente.** Um pedido com vários arquivos continua sendo
   **uma linha** em `fila_impressao`, com **um** `pdf_path` e `num_paginas` igual à soma —

@@ -9,8 +9,8 @@ Os quatro subsistemas não se chamam diretamente. Eles se coordenam por uma úni
 
 1. **Upload (navegador)** — o cliente escolhe um PDF em `/impressao`. O navegador valida
    tipo/tamanho e conta as páginas com `pdfjs-dist`.
-2. **Configuração (navegador)** — escolhe modo de cor; o preço é calculado a partir de
-   `config_precos`.
+2. **Configuração (navegador)** — escolhe modo de cor; o preço é calculado a partir das faixas de
+   `faixas_preco` (páginas × cópias escolhe a faixa).
 3. **Criação do pedido (navegador → Supabase)** — o PDF é enviado direto ao bucket
    `pdfs-impressao` e uma linha é inserida em `fila_impressao` com
    `status = 'AGUARDANDO_PAGAMENTO'`.

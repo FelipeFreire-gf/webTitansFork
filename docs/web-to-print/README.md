@@ -24,7 +24,7 @@ e se coordenam exclusivamente pela coluna `fila_impressao.status` no Supabase:
         ┌──────────────────────────────────────────────────────────────────────────┐
         │                              SUPABASE                                       │
         │  Storage: bucket privado `pdfs-impressao`  │  DB: `fila_impressao`,         │
-        │                                            │      `config_precos` (+RLS,    │
+        │                                            │      `faixas_preco` (+RLS,     │
         │                                            │      Realtime)                  │
         └──────────────────────────────────────────────────────────────────────────┘
 ```

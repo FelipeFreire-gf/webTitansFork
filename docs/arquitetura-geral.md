@@ -38,7 +38,7 @@ no **Supabase** (Postgres + Storage + Realtime). A impressão física acontece n
             ▼                             ▼                             ▼
        ┌───────────────────────────────────────────────────────────────────────────┐
        │                    SUPABASE — projeto IMPRESSORA (legado)                  │
-       │  Postgres: fila_impressao, config_precos, impressora_status, chamados_ajuda,│
+       │  Postgres: fila_impressao, faixas_preco, impressora_status, chamados_ajuda,│
        │            reimpressao_tokens, reimpressoes  (+ RLS, Realtime, pg_cron)     │
        │  Storage:  bucket privado `pdfs-impressao`                                   │
        │  Edge Function: cleanup-fila (retenção, horária)                            │
@@ -293,13 +293,13 @@ Máquina de 4 passos: `UPLOAD → CONFIG → PAGAMENTO → SUCESSO` (ou `TIMEOUT
    contagem de páginas via `pdfjs-dist` no navegador.
 2. **Mesclagem** — 2+ arquivos são unidos por `pdf-lib` no cliente; só o PDF
    final (≤ 30 MB) sobe. 1 arquivo sobe byte a byte, sem reescrita.
-3. **Configuração** — modo de cor (`PB`/`COLORIDO`); preço **estimado** de
-   `config_precos`.
+3. **Configuração** — modo de cor (`PB`/`COLORIDO`); preço **estimado** por
+   faixa de volume (`faixas_preco`).
 4. **Criação** — upload direto ao bucket `pdfs-impressao` (`<uuid>/<nome>.pdf`) +
    `INSERT` em `fila_impressao` (`status = AGUARDANDO_PAGAMENTO`, sem
    `valor_centavos` — a RLS exige `NULL`).
 5. **PIX** — `POST /api/payments/create-pix` **baixa o PDF, reconta as páginas
-   com `pdf-lib`, recalcula o valor** (`páginas × cópias × config_precos[modo]`),
+   com `pdf-lib`, recalcula o valor** (faixa de `faixas_preco[modo]` escolhida por `páginas × cópias`),
    cria a cobrança no Mercado Pago (`idempotencyKey = pedidoId`) e devolve QR
    Code + Copia-e-Cola + expiração (30 min).
 6. **Acompanhamento** — `usePedidoStatus`: Realtime (`postgres_changes` filtrado
@@ -473,7 +473,7 @@ Detalhe por tabela na §7. Resumo do que o cliente `anon` pode:
   `valor_centavos`/`mp_payment_id`/`paid_at`/`printed_at` nulos e
   `quantidade_copias >= 1`; `SELECT` liberado (`using (true)` — a proteção é o
   UUID opaco na query). **Sem** `UPDATE`/`DELETE`.
-- **`config_precos`**: só `SELECT`.
+- **`faixas_preco`**: só `SELECT` (escrita só `service_role`, via bot).
 - **`impressora_status`**: só `SELECT`.
 - **`chamados_ajuda`, `reimpressao_tokens`, `reimpressoes`** (projeto
   IMPRESSORA): RLS habilitado **sem nenhuma policy** → todo acesso `anon`
@@ -526,7 +526,7 @@ Migrations em `supabase/migrations/0001…0012`.
 ### 7.1 Diagrama de relacionamentos (lógico)
 
 ```
-config_precos ──(modo_cor, leitura no create-pix e no checkout)──┐
+faixas_preco ───(modo_cor, leitura no create-pix e no checkout)──┐
                                                                  │
                                             ┌────────────────────▼─────────────────┐
                                             │           fila_impressao             │
@@ -594,17 +594,31 @@ assinam `postgres_changes` na sua linha.
 
 ---
 
-### 7.3 Tabela `config_precos`
+### 7.3 Tabela `faixas_preco`
 
-Preço por página, por modo de cor. Editável no painel do Supabase **sem deploy**.
+Preço por página em **faixas de volume**, por modo de cor (migration 0014). O total
+`páginas × cópias` do pedido escolhe **uma** faixa (a de maior `a_partir_de` ≤ total) e o
+preço dela vale para todas as páginas. Editável **sem deploy**: pelo bot do Telegram
+(`/precos`, `/faixa`, `/remover_faixa`) ou pelo painel do Supabase. É a única fonte de
+preço: o bot escreve (`service_role`), checkout e totem leem (`anon`), o `create-pix`
+cobra (`service_role`).
 
 | Coluna | Tipo | Nulo? | Descrição |
 | --- | --- | :---: | --- |
-| `modo_cor` | `text` | não | **PK**. `CHECK IN ('PB','COLORIDO')`. |
+| `modo_cor` | `text` | não | **PK (parte 1)**. `CHECK IN ('PB','COLORIDO')`. |
+| `a_partir_de` | `int` | não | **PK (parte 2)**. `CHECK (>= 1)`. Total de páginas impressas a partir do qual a faixa vale. |
 | `valor_centavos_por_pagina` | `int` | não | `CHECK (> 0)`. |
+| `atualizado_em` | `timestamptz` | não | Default `now()`. |
+| `atualizado_por` | `bigint` | sim | `from.id` do admin no Telegram; `null` no seed. |
 
-**Seed inicial**: `PB = 50`, `COLORIDO = 200` (centavos).
-**RLS**: `config_precos_anon_select` — `anon` só `SELECT`.
+**Seed**: copia `config_precos` como faixa base (`a_partir_de = 1`). A faixa base deve
+sempre existir.
+**RLS**: `faixas_preco_select` — `anon`/`authenticated` só `SELECT`; sem policy de escrita
+(só `service_role`).
+
+> **`config_precos` (legado, sem uso).** Tabela anterior (`modo_cor` PK,
+> `valor_centavos_por_pagina`, seed `PB = 50`, `COLORIDO = 200`). O código não a lê mais;
+> fica até o deploy e será removida em migration posterior.
 
 ---
 

@@ -26,8 +26,10 @@ Entrada: `{ pedidoId: string }`. Passos:
 1. Busca o pedido em `fila_impressao`. Responde **404** se não existir, **409** se não
    estiver em `AGUARDANDO_PAGAMENTO`.
 2. **Baixa o PDF** do Storage (service_role), **conta as páginas** com `pdf-lib` e
-   **recalcula** `valor_centavos = páginas reais × config_precos[modo_cor]`, ignorando o
-   que o cliente declarou. PDF inválido/criptografado → **422** sem cobrar.
+   **recalcula** `valor_centavos` com `calcularPreco(páginas reais, cópias, faixas)`, lendo
+   `faixas_preco` do `modo_cor` (o total `páginas × cópias` escolhe a faixa; sem a faixa
+   base → 500), ignorando o que o cliente declarou. A descrição da cobrança no MP inclui o
+   preço por página aplicado. PDF inválido/criptografado → **422** sem cobrar.
 3. Chama `mpPayment.create(...)` com `transaction_amount = valor_centavos / 100` (o valor
    recalculado), `payment_method_id: "pix"`, `external_reference: pedido.id` e
    **`requestOptions.idempotencyKey: pedido.id`**.
@@ -89,7 +91,7 @@ Endpoint **público** chamado pelo Mercado Pago. Sequência:
   Pago deriva de `PUBLIC_BASE_URL` (`https://www.roboticstitans.com.br`), com fallback aos
   headers `x-forwarded-*` em dev/local.
 - **Preço e contagem são autoridade do servidor**: o `create-pix` baixa o PDF, conta as
-  páginas com `pdf-lib` e recalcula `valor_centavos` a partir de `config_precos` (capability
+  páginas com `pdf-lib` e recalcula `valor_centavos` a partir de `faixas_preco` (capability
   `print-payment-integrity`).
 
 ---
