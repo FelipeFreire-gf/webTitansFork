@@ -16,6 +16,7 @@ import { TelaSucesso } from "@/components/impressao/TelaSucesso";
 import { BotaoOndeRetirar } from "@/components/impressao/BotaoOndeRetirar";
 import { StatusImpressora } from "@/components/impressao/StatusImpressora";
 import { supabase } from "@/lib/supabase";
+import { enviarPDF, ErroCheckout, MSG_CONEXAO, registrarFalha } from "@/lib/envio-pdf";
 import { protocoloDoPedido } from "@/lib/protocolo";
 import {
   lerPedidoEmAndamento,
