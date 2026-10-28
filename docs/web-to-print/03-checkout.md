@@ -89,15 +89,37 @@ Se qualquer passo falhar, um toast mostra o erro e o cliente permanece na config
 
 ### 5. Pagamento (`TelaPagamento`)
 
-- Renderiza o QR Code (`data:image/png;base64,...`), o botão "Copiar Copia e Cola" e um
-  timer regressivo até a expiração.
-- Usa `usePedidoStatus(pedidoId, expirationDateTo)`: quando o status vira `PAGO`, chama
-  `onPago()` → tela de sucesso. Se estourar a janela, chama `onTimeout()`.
+- Renderiza o QR Code (`data:image/png;base64,...`), o botão "Copiar Copia e Cola", um
+  timer regressivo até a expiração e o **protocolo do pedido** — o cliente já sai para o
+  app do banco com ele.
+- Usa `usePedidoStatus(pedidoId, expirationDateTo)`: quando o pagamento é confirmado
+  (`pago`), chama `onPago()` → tela de sucesso. Se estourar a janela ou o PIX for
+  `CANCELADO`, chama `onTimeout()`.
+- "Começar outro pedido" descarta o PIX guardado e volta ao upload — como o PIX sobrevive
+  a reloads (abaixo), recarregar a página não serve mais para recomeçar.
 
 ### 6. Sucesso (`TelaSucesso`)
 
 - Mostra "Pagamento confirmado!" e o **protocolo** = 8 primeiros caracteres do UUID, em
   maiúsculas, para o cliente apresentar na retirada.
+- "Fazer outro pedido" e "Voltar ao início" descartam o pedido guardado.
+
+### Retomada após reload (`src/lib/pedido-em-andamento.ts`)
+
+No celular, a aba costuma ser descartada enquanto o cliente está no app do banco (o
+navegador interno do Instagram é o pior caso); ao voltar, a página recarregava no upload e
+o cliente nunca via o protocolo. Agora, ao gerar o PIX, o pedido vai para o
+`localStorage` e a página reabre conforme o que encontrar:
+
+| Guardado | Reabre em |
+|---|---|
+| PIX ainda válido | `PAGAMENTO` (que leva ao sucesso se já foi pago) |
+| PIX expirado, sem sucesso | `VERIFICANDO`: uma consulta de status → `SUCESSO` se pago, senão descarta e vai ao `UPLOAD` |
+| Sucesso há até 15 min | `SUCESSO` |
+| Sucesso há mais de 15 min | descarta → `UPLOAD` |
+
+Sem `localStorage` disponível (aba anônima, webview restrito) o fluxo segue como antes,
+sem retomada.
 
 ## Acompanhamento de status (`usePedidoStatus`)
 
@@ -106,11 +128,18 @@ Combina dois mecanismos para robustez (detalhado em [02](02-fluxo-pedido.md)):
 - **Realtime**: assina o canal `postgres_changes` filtrado por `id=eq.<pedidoId>` na
   tabela `fila_impressao`. Entrega a mudança em ~instantâneo quando o socket está de pé.
 - **Polling (fallback)**: via TanStack Query, refaz a query a cada **5s** enquanto o
-  status ainda não é `PAGO` e não estourou o timeout.
+  pagamento não foi confirmado, e também ao voltar para a aba (`refetchOnWindowFocus`).
 - **Janela de acompanhamento**: dura até a **expiração real do QR** (`expiration_date_to`;
-  o PIX vale **30 min**), sem corte fixo; ao expirar sem `PAGO`, reporta `error = "TIMEOUT"`.
+  o PIX vale **30 min**), sem corte fixo. `error = "TIMEOUT"` só sai depois de uma
+  consulta feita **após** a expiração — ao voltar do banco com o QR vencido, o cache
+  ainda diz `AGUARDANDO_PAGAMENTO`, e o pedido pode ter sido pago no meio-tempo.
 
-O status efetivo é `realtimeStatus ?? query.data` — o que chegar primeiro.
+**Pago é qualquer status pós-pagamento** (`pagamentoConfirmado` em `src/lib/types.ts`:
+`PAGO`, `IMPRIMINDO`, `IMPRESSO`, `ERRO`), vindo de qualquer uma das fontes. Comparar só
+com `PAGO` perdia o sucesso no celular: com a aba suspensa durante o app do banco e a fila
+vazia, o worker já levou o pedido a `IMPRIMINDO`/`IMPRESSO` quando o cliente volta — a
+tela ficava em "Aguardando…" e acabava em "Pagamento não confirmado" com a impressão
+pronta. `CANCELADO` (PIX recusado/expirado no MP) encerra como timeout.
 
 ## Decisões e pontos de atenção
 
