@@ -7,9 +7,13 @@ import { protocoloDoPedido } from "@/lib/protocolo";
 
 type Props = {
   pedidoId: string;
+  // A tela volta após um reload por alguns minutos (pedido-em-andamento.ts);
+  // as duas saídas descartam o pedido guardado para não reabrir esta tela.
+  onNovoPedido: () => void;
+  onSair: () => void;
 };
 
-export function TelaSucesso({ pedidoId }: Props) {
+export function TelaSucesso({ pedidoId, onNovoPedido, onSair }: Props) {
   const protocolo = protocoloDoPedido(pedidoId);
 
   return (
@@ -28,9 +32,14 @@ export function TelaSucesso({ pedidoId }: Props) {
 
         <BotaoOndeRetirar variante="destacado" className="mt-4" />
 
-        <Button asChild variant="outline" className="mt-2">
-          <Link href="/">Voltar ao início</Link>
-        </Button>
+        <div className="flex flex-col sm:flex-row justify-center gap-2 mt-2">
+          <Button onClick={onNovoPedido}>Fazer outro pedido</Button>
+          <Button asChild variant="outline">
+            <Link href="/" onClick={onSair}>
+              Voltar ao início
+            </Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
