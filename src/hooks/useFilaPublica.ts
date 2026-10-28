@@ -20,7 +20,8 @@ const POLL_MS = 30_000;
 // Agrupa rajadas de eventos realtime num único refetch.
 const DEBOUNCE_MS = 1_000;
 
-// Fila pública do kiosk: lê a view `fila_publica` (já ordenada por paid_at asc) e
+// Fila pública do kiosk: lê a view `fila_publica` com o pagamento mais recente
+// no topo (o `.order()` do cliente prevalece sobre o `order by` da view) e
 // usa o Realtime de `fila_impressao` apenas como gatilho de refetch — o Supabase
 // Realtime não emite eventos de views, então o payload é ignorado.
 export function useFilaPublica() {
@@ -33,7 +34,7 @@ export function useFilaPublica() {
         .select(
           "protocolo, status, num_paginas, quantidade_copias, modo_cor, paid_at, printed_at"
         )
-        .order("paid_at", { ascending: true });
+        .order("paid_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as FilaPublicaItem[];
     },
