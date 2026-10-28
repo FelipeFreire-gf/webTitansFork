@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import type { StatusPedido } from "@/lib/types";
+import { pagamentoConfirmado, type StatusPedido } from "@/lib/types";
 
 type Resultado = {
-  status: StatusPedido | null;
+  // Pagamento aprovado — o pedido pode já estar IMPRIMINDO ou IMPRESSO.
+  pago: boolean;
   isLoading: boolean;
-  error: "TIMEOUT" | "FETCH" | null;
+  error: "TIMEOUT" | "CANCELADO" | "FETCH" | null;
 };
 
 // A janela de acompanhamento dura até a expiração real do QR
@@ -20,11 +21,11 @@ export function usePedidoStatus(
   const [realtimeStatus, setRealtimeStatus] = useState<StatusPedido | null>(null);
   const [timedOut, setTimedOut] = useState(false);
 
+  const expMs = expirationDateTo ? new Date(expirationDateTo).getTime() : NaN;
+
   useEffect(() => {
     setTimedOut(false);
-    if (!pedidoId || !expirationDateTo) return;
-    const expMs = new Date(expirationDateTo).getTime();
-    if (!Number.isFinite(expMs)) return;
+    if (!pedidoId || !Number.isFinite(expMs)) return;
     const restante = expMs - Date.now();
     if (restante <= 0) {
       setTimedOut(true);
@@ -32,7 +33,7 @@ export function usePedidoStatus(
     }
     const timer = setTimeout(() => setTimedOut(true), restante);
     return () => clearTimeout(timer);
-  }, [pedidoId, expirationDateTo]);
+  }, [pedidoId, expMs]);
 
   useEffect(() => {
     if (!pedidoId) return;
@@ -58,10 +59,19 @@ export function usePedidoStatus(
     };
   }, [pedidoId]);
 
+  // O Realtime cai com a aba em segundo plano; o polling (que o React Query
+  // também dispara ao voltar para a aba) cobre o retorno do app do banco.
+  const pagoRealtime = pagamentoConfirmado(realtimeStatus);
   const query = useQuery({
     queryKey: ["pedido-status", pedidoId],
-    enabled: !!pedidoId && !timedOut && realtimeStatus !== "PAGO",
-    refetchInterval: 5000,
+    enabled: !!pedidoId && !pagoRealtime,
+    refetchInterval: (q) => {
+      const ultimo = q.state.data;
+      if (pagamentoConfirmado(ultimo) || ultimo === "CANCELADO") return false;
+      // Expirado: para depois da primeira consulta pós-expiração (abaixo).
+      if (timedOut && q.state.dataUpdatedAt >= expMs) return false;
+      return 5000;
+    },
     queryFn: async () => {
       const { data, error } = await supabase
         .from("fila_impressao")
@@ -73,14 +83,26 @@ export function usePedidoStatus(
     },
   });
 
-  const status = realtimeStatus ?? query.data ?? null;
+  // Pago e cancelado são finais: basta uma das fontes ver. O Realtime pode ter
+  // guardado um status antigo enquanto o polling já viu o pedido avançar, e
+  // vice-versa.
+  const pago = pagoRealtime || pagamentoConfirmado(query.data);
+  const cancelado = realtimeStatus === "CANCELADO" || query.data === "CANCELADO";
+
+  // Ao voltar com o QR já expirado, o timer dispara antes do refetch e o cache
+  // ainda diz AGUARDANDO_PAGAMENTO. Só declara TIMEOUT com uma consulta feita
+  // depois da expiração.
+  const consultouAposExpirar = query.dataUpdatedAt >= expMs;
 
   let error: Resultado["error"] = null;
-  if (timedOut && status !== "PAGO") error = "TIMEOUT";
-  else if (query.isError) error = "FETCH";
+  if (!pago) {
+    if (cancelado) error = "CANCELADO";
+    else if (timedOut && consultouAposExpirar) error = "TIMEOUT";
+    else if (query.isError) error = "FETCH";
+  }
 
   return {
-    status,
+    pago,
     isLoading: query.isLoading && realtimeStatus === null,
     error,
   };

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatBRL } from "@/lib/pricing";
+import { protocoloDoPedido } from "@/lib/protocolo";
 import { usePedidoStatus } from "@/hooks/usePedidoStatus";
 
 type Props = {
@@ -16,6 +17,9 @@ type Props = {
   valorCentavos: number;
   onPago: () => void;
   onTimeout: () => void;
+  // Saída para refazer o pedido: o PIX sobrevive a reloads
+  // (pedido-em-andamento.ts), então recarregar a página não basta mais.
+  onNovoPedido: () => void;
 };
 
 function calcSegundosRestantes(iso: string | null | undefined): number | null {
@@ -39,18 +43,20 @@ export function TelaPagamento({
   valorCentavos,
   onPago,
   onTimeout,
+  onNovoPedido,
 }: Props) {
-  const { status, error } = usePedidoStatus(pedidoId, expirationDateTo);
+  const { pago, error } = usePedidoStatus(pedidoId, expirationDateTo);
   const [restantes, setRestantes] = useState<number | null>(() =>
     calcSegundosRestantes(expirationDateTo)
   );
 
   useEffect(() => {
-    if (status === "PAGO") onPago();
-  }, [status, onPago]);
+    if (pago) onPago();
+  }, [pago, onPago]);
 
+  // CANCELADO: o MP recusou ou expirou o PIX — mesma saída do timeout.
   useEffect(() => {
-    if (error === "TIMEOUT") onTimeout();
+    if (error === "TIMEOUT" || error === "CANCELADO") onTimeout();
   }, [error, onTimeout]);
 
   useEffect(() => {
@@ -86,6 +92,13 @@ export function TelaPagamento({
           <p className="text-3xl font-bold text-titans-orange">{formatBRL(valorCentavos)}</p>
         </div>
 
+        <div className="bg-muted/30 rounded-lg py-3 text-center">
+          <p className="text-xs text-muted-foreground">Protocolo do pedido</p>
+          <p className="text-xl font-mono font-bold tracking-widest">
+            {protocoloDoPedido(pedidoId)}
+          </p>
+        </div>
+
         <div className="flex flex-col items-center gap-3">
           <img
             src={qrSrc}
@@ -106,6 +119,12 @@ export function TelaPagamento({
         <div className="border-t border-border pt-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
           Aguardando confirmação do pagamento…
+        </div>
+
+        <div className="text-center">
+          <Button variant="link" size="sm" onClick={onNovoPedido} className="text-muted-foreground">
+            Começar outro pedido
+          </Button>
         </div>
       </CardContent>
     </Card>
