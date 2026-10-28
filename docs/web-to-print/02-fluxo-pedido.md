@@ -9,8 +9,8 @@ Os quatro subsistemas não se chamam diretamente. Eles se coordenam por uma úni
 
 1. **Upload (navegador)** — o cliente escolhe um PDF em `/impressao`. O navegador valida
    tipo/tamanho e conta as páginas com `pdfjs-dist`.
-2. **Configuração (navegador)** — escolhe modo de cor; o preço é calculado a partir das faixas de
-   `faixas_preco` (páginas × cópias escolhe a faixa).
+2. **Configuração (navegador)** — escolhe a quantidade de cópias (só P&B); o preço é calculado a partir das faixas de
+   `faixas_preco` (páginas × cópias escolhe a faixa), e uma régua mostra a faixa atual e a próxima.
 3. **Criação do pedido (navegador → Supabase)** — o PDF é enviado direto ao bucket
    `pdfs-impressao` e uma linha é inserida em `fila_impressao` com
    `status = 'AGUARDANDO_PAGAMENTO'`.
@@ -21,9 +21,11 @@ Os quatro subsistemas não se chamam diretamente. Eles se coordenam por uma úni
    `POST /api/webhooks/mercadopago`; com assinatura válida e pagamento aprovado, o status
    vira `PAGO` e `paid_at` é setado.
 7. **Aviso ao cliente (Supabase → navegador)** — o front recebe a mudança via Realtime
-   (com polling de fallback) e mostra a tela de sucesso com o protocolo.
+   (com polling de fallback) e mostra a tela de sucesso: o ticket com o protocolo e uma linha de
+   status que continua acompanhando o pedido.
 8. **Impressão (sede)** — o worker detecta o `PAGO`, reivindica (`IMPRIMINDO`), baixa o
-   PDF, reconfere as páginas, imprime na 135w e marca `IMPRESSO` com `printed_at`.
+   PDF, reconfere as páginas, imprime na 135w e marca `IMPRESSO` com `printed_at`. A tela de
+   sucesso, se ainda aberta, passa por "Imprimindo agora" e chega a "Pronto · impresso às HH:MM".
 
 ## A máquina de estados
 

@@ -1,8 +1,10 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+"use client";
+
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { BotaoOndeRetirar } from "@/components/impressao/BotaoOndeRetirar";
+import { StatusPedidoAoVivo } from "@/components/impressao/StatusPedidoAoVivo";
+import { TicketPedido } from "@/components/impressao/TicketPedido";
+import { useAcompanhamentoPedido } from "@/hooks/useAcompanhamentoPedido";
 import { protocoloDoPedido } from "@/lib/protocolo";
 
 type Props = {
@@ -13,34 +15,41 @@ type Props = {
   onSair: () => void;
 };
 
+// Saídas discretas: o destaque da tela é o canhoto do ticket (onde retirar).
+const CLASSE_LINK =
+  "rounded-md px-1.5 py-2 underline decoration-muted-foreground/45 underline-offset-4 transition-colors " +
+  "[-webkit-tap-highlight-color:transparent] active:text-foreground [@media(hover:hover)]:hover:text-foreground " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
 export function TelaSucesso({ pedidoId, onNovoPedido, onSair }: Props) {
-  const protocolo = protocoloDoPedido(pedidoId);
+  const { pedido } = useAcompanhamentoPedido(pedidoId);
 
   return (
-    <Card>
-      <CardContent className="p-8 text-center space-y-4">
-        <CheckCircle2 className="mx-auto h-16 w-16 text-green-500" />
-        <h2 className="text-2xl font-bold">Pagamento confirmado!</h2>
-        <p className="text-muted-foreground">
-          Seu pedido entrou na fila de impressão. Guarde o protocolo abaixo
-          para retirar a impressão na sede da TITANS.
-        </p>
-        <div className="bg-muted/30 rounded-lg py-3">
-          <p className="text-xs text-muted-foreground">Protocolo</p>
-          <p className="text-2xl font-mono font-bold tracking-widest">{protocolo}</p>
-        </div>
+    <div className="space-y-5">
+      <div className="flex items-center justify-center gap-2.5">
+        <CheckCircle2 className="h-6 w-6 shrink-0 text-green-500" />
+        <h2 className="text-xl font-bold">Pagamento confirmado!</h2>
+      </div>
 
-        <BotaoOndeRetirar variante="destacado" className="mt-4" />
+      <TicketPedido protocolo={protocoloDoPedido(pedidoId)} pedido={pedido} />
 
-        <div className="flex flex-col sm:flex-row justify-center gap-2 mt-2">
-          <Button onClick={onNovoPedido}>Fazer outro pedido</Button>
-          <Button asChild variant="outline">
-            <Link href="/" onClick={onSair}>
-              Voltar ao início
-            </Link>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <StatusPedidoAoVivo pedido={pedido} />
+
+      <p className="text-center text-sm text-muted-foreground">
+        Seu pedido entrou na fila de impressão e já deve estar sendo impresso.
+        Vá até a sede da TITANS retirá-lo. Entre em contato conosco pelo totem
+        caso precise de algum tipo de suporte.
+      </p>
+
+      <div className="flex flex-wrap items-center justify-center gap-x-1 text-sm text-muted-foreground">
+        <button type="button" onClick={onNovoPedido} className={CLASSE_LINK}>
+          Fazer outro pedido
+        </button>
+        <span aria-hidden="true">·</span>
+        <Link href="/" onClick={onSair} className={CLASSE_LINK}>
+          Voltar ao início
+        </Link>
+      </div>
+    </div>
   );
 }

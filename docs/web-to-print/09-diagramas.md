@@ -90,7 +90,7 @@ flowchart TD
   D3 --> D4{"Soma de paginas confere<br/>e mesclado ate 30 MB?"}
   D4 -->|nao| B
   D4 -->|sim| E
-  E["Escolher modo de cor<br/>ver estimativa de preco (faixas_preco)"]
+  E["Escolher copias (so preto e branco)<br/>ver total e regua de faixas (faixas_preco)"]
   E --> F["Upload PDF direto ao Storage (anon key)<br/>INSERT fila_impressao = AGUARDANDO_PAGAMENTO"]
   F --> G["POST /api/payments/create-pix<br/>{ pedidoId }"]
 
@@ -171,7 +171,7 @@ flowchart LR
     UC1(["Enviar PDF"])
     UC2(["Configurar impressao e ver preco"])
     UC3(["Pagar via PIX"])
-    UC4(["Acompanhar status do pedido<br/>(Realtime + polling)"])
+    UC4(["Acompanhar status do pedido<br/>(Realtime + polling, ate IMPRESSO)"])
     UC5(["Gerar cobranca PIX<br/>(create-pix)"])
     UC6(["Confirmar pagamento<br/>(webhook mercadopago)"])
     UC7(["Imprimir documento<br/>(CUPS + failover)"])

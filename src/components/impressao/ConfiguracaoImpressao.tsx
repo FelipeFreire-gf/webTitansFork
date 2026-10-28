@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { fetchFaixas, formatBRL } from "@/lib/pricing";
-import { calcularPreco, proximaFaixa, type FaixaPreco } from "@/lib/faixas-preco";
+import { calcularPreco, type FaixaPreco } from "@/lib/faixas-preco";
+import { ReguaFaixas } from "@/components/impressao/ReguaFaixas";
 import type { ModoCor } from "@/lib/types";
 
 // A HP 135w é monocromática, então o checkout oferece apenas P&B.
@@ -78,106 +79,80 @@ export function ConfiguracaoImpressao({
       ? calcularPreco(numPaginas, quantidadeCopias, faixas)
       : null;
   const valor = preco?.valorCentavos ?? null;
-  // Com o campo vazio, mostra o preço da faixa base.
-  const precoPorPagina =
-    preco?.faixa.valor_centavos_por_pagina ?? faixas?.[0]?.valor_centavos_por_pagina;
   const temDescontoPorVolume = (faixas?.length ?? 0) > 1;
-  const proxima = preco && faixas ? proximaFaixa(preco.totalPaginas, faixas) : null;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Configuração da impressão</CardTitle>
+        <CardDescription>
+          {numPaginas} {numPaginas === 1 ? "página" : "páginas"}
+          {numArquivos > 1 && ` (${numArquivos} arquivos juntos)`} · preto e branco
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Total de páginas
-            {numArquivos > 1 && ` (${numArquivos} arquivos juntos)`}
-          </p>
-          <p className="text-2xl font-semibold">{numPaginas}</p>
-        </div>
-
-        <div className="space-y-1">
-          <Label>Modo de cor</Label>
-          <p className="font-normal">
-            Preto e branco
-            {precoPorPagina != null && (
-              <span className="text-muted-foreground ml-2">
-                ({formatBRL(precoPorPagina)}/página)
-              </span>
-            )}
-          </p>
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="quantidade-copias">Quantidade de cópias</Label>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className={CLASSE_BOTAO_COPIAS}
-              aria-label="Diminuir cópias"
-              disabled={enviando || (quantidadeCopias ?? QUANTIDADE_MINIMA) <= QUANTIDADE_MINIMA}
-              onClick={() => somarCopias(-1)}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            {/* type="text" + inputMode: o type="number" do celular aceita
-                vírgula/sinal e não deixa o campo vazio de forma previsível. */}
-            <Input
-              id="quantidade-copias"
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              autoComplete="off"
-              className="w-20 text-center"
-              value={textoCopias}
-              disabled={enviando}
-              onChange={(e) =>
-                setTextoCopias(
-                  e.target.value.replace(/\D/g, "").slice(0, String(QUANTIDADE_MAXIMA).length)
-                )
-              }
-              // Saiu do campo vazio ou zerado: volta ao mínimo.
-              onBlur={() => setTextoCopias(String(quantidadeCopias ?? QUANTIDADE_MINIMA))}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className={CLASSE_BOTAO_COPIAS}
-              aria-label="Aumentar cópias"
-              disabled={enviando || (quantidadeCopias ?? 0) >= QUANTIDADE_MAXIMA}
-              onClick={() => somarCopias(1)}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+        {/* Cópias e total na mesma linha: a causa e o efeito lado a lado. */}
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="quantidade-copias">Cópias</Label>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className={`h-9 w-9 ${CLASSE_BOTAO_COPIAS}`}
+                aria-label="Diminuir cópias"
+                disabled={enviando || (quantidadeCopias ?? QUANTIDADE_MINIMA) <= QUANTIDADE_MINIMA}
+                onClick={() => somarCopias(-1)}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              {/* type="text" + inputMode: o type="number" do celular aceita
+                  vírgula/sinal e não deixa o campo vazio de forma previsível. */}
+              <Input
+                id="quantidade-copias"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                autoComplete="off"
+                className="h-9 w-[52px] px-1 text-center"
+                value={textoCopias}
+                disabled={enviando}
+                onChange={(e) =>
+                  setTextoCopias(
+                    e.target.value.replace(/\D/g, "").slice(0, String(QUANTIDADE_MAXIMA).length)
+                  )
+                }
+                // Saiu do campo vazio ou zerado: volta ao mínimo.
+                onBlur={() => setTextoCopias(String(quantidadeCopias ?? QUANTIDADE_MINIMA))}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className={`h-9 w-9 ${CLASSE_BOTAO_COPIAS}`}
+                aria-label="Aumentar cópias"
+                disabled={enviando || (quantidadeCopias ?? 0) >= QUANTIDADE_MAXIMA}
+                onClick={() => somarCopias(1)}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-
-        <div className="border-t border-border pt-4 space-y-1">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-muted-foreground">Total</span>
-            <span className="text-3xl font-bold text-titans-orange">
+          {/* Total neutro: o laranja da tela fica só no "Pagar com PIX". */}
+          <div className="text-right" aria-live="polite">
+            <p className="text-sm text-muted-foreground">Total</p>
+            <p className="text-2xl font-bold tabular-nums">
               {valor === null ? "—" : formatBRL(valor)}
-            </span>
+            </p>
           </div>
-          {/* Faixas contam páginas × cópias; o preço da faixa vale para todas. */}
-          {temDescontoPorVolume && preco && preco.faixa.a_partir_de > 1 && (
-            <p className="text-sm text-muted-foreground text-right">
-              Desconto por volume: a partir de {preco.faixa.a_partir_de} páginas
-              impressas.
-            </p>
-          )}
-          {temDescontoPorVolume && proxima && (
-            <p className="text-sm text-muted-foreground text-right">
-              Com {proxima.a_partir_de} páginas impressas ou mais (páginas × cópias),
-              sai {formatBRL(proxima.valor_centavos_por_pagina)}/página.
-            </p>
-          )}
         </div>
+
+        {/* Faixas contam páginas × cópias; o preço da faixa vale para todas. A
+            régua mostra a faixa atual e a próxima, no lugar das dicas em texto. */}
+        {temDescontoPorVolume && (
+          <ReguaFaixas faixas={faixas} totalPaginas={preco?.totalPaginas ?? null} />
+        )}
 
         <div className="space-y-3">
           <div className="flex justify-between">

@@ -1,20 +1,13 @@
 import type { ModoCor, StatusPedido } from "@/lib/types";
+import { formatarHorario } from "@/lib/horario";
 
-// Lógica de estado da impressora compartilhada com /impressao vive em
-// @/lib/impressora; reexportada aqui para manter os imports do kiosk estáveis.
+// Lógica de estado da impressora e o formato de horário são compartilhados com
+// /impressao; reexportados aqui para manter os imports do kiosk estáveis.
 export { faixaImpressora, type FaixaImpressora } from "@/lib/impressora";
+export { formatarHorario } from "@/lib/horario";
 
 export function rotuloModoCor(modo: ModoCor): string {
   return modo === "PB" ? "P&B" : "Colorido";
-}
-
-// Formata um timestamp ISO como "HH:MM" (pt-BR). Retorna "" para null/inválido,
-// deixando o chamador decidir se omite o trecho.
-export function formatarHorario(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return "";
-  return d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
 // Compara duas datas pelo dia de calendário no horário local (o kiosk roda em
