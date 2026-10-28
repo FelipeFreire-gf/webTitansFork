@@ -43,6 +43,19 @@ Preço por página, por modo de cor — editável no painel **sem deploy**.
 Seed inicial: `PB = 50`, `COLORIDO = 200` (centavos). Mudar uma linha no Table Editor já
 afeta os próximos checkouts.
 
+## `falhas_checkout` (`0013`)
+
+Telemetria das falhas do checkout: cada erro de leitura do arquivo, upload, registro do
+pedido ou geração do PIX vira uma linha com o código da etapa (`ENVIO-REDE`, `ENVIO-500`,
+`PEDIDO`, `PIX-502`, `LEITURA`, `INESPERADO`…), a mensagem do erro, o user-agent e — quando
+o navegador expõe as Client Hints — o modelo e a versão do Android. Falhas de upload que
+ainda serão repetidas têm `tentativa` (1 ou 2); a falha final, que chegou ao cliente, tem
+`tentativa = null`.
+
+- Escrita só via `POST /api/telemetria/falha-checkout` (service_role, rate-limit por IP);
+  RLS sem policy, como `chamados_ajuda`.
+- Retenção de 90 dias (regra 5 do `cleanup-fila`).
+
 ## Bucket `pdfs-impressao` (privado)
 
 - Criado com `public = false` — **não** é servível por URL pública.

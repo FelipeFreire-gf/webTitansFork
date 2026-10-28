@@ -119,6 +119,20 @@ o pedido vira `ERRO` "nada impresso" (re-filar para `PAGO` é seguro). Isso depe
 - **Fila da impressora:** `lpstat -o <PRINTER_NAME>`.
 - **Fila de pedidos:** no Supabase, observar linhas em `PAGO` que não avançam (worker
   parado?) e acúmulo de `ERRO`.
+- **Falhas de envio do PDF:** relatos de "não consegui enviar" chegam como linhas em
+  `falhas_checkout` (ver [05](05-supabase.md)). Para achar padrão por aparelho:
+
+  ```sql
+  select codigo, coalesce(modelo, '?') as modelo, count(*)
+  from falhas_checkout
+  where tentativa is null and criado_em > now() - interval '30 days'
+  group by 1, 2 order by 3 desc;
+  ```
+
+  Sem modelo (Safari/Firefox não têm Client Hints), o `user_agent` ainda identifica o
+  sistema e o navegador — o Mi Browser aparece como `XiaoMi/MiuiBrowser`.
+  Implantação: aplique a migration `0013` **antes** de publicar o `cleanup-fila`, cuja
+  regra 5 apaga linhas dessa tabela.
 - **Worker fantasma:** garanta que o worker rode em **uma** máquina só. Uma instância
   esquecida (ex.: num notebook) compete pelos pedidos e pode gerar `ERRO`/estados
   inesperados. O claim atômico evita impressão dupla, mas dois workers ainda confundem o

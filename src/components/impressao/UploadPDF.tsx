@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, FileText, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { registrarFalha } from "@/lib/envio-pdf";
 import {
   carregarPDF,
   contarPaginas,
@@ -74,7 +75,8 @@ export function UploadPDF({ itens, onItensChange, onPDFPronto }: Props) {
               item.id === entrada.id ? { ...item, file: copia, paginas } : item
             )
           );
-        } catch {
+        } catch (err) {
+          registrarFalha({ codigo: "LEITURA", causa: err, tamanhoBytes: entrada.file.size });
           toast.error(`Não foi possível ler "${entrada.file.name}".`);
           onItensChange((atuais) => atuais.filter((item) => item.id !== entrada.id));
         }

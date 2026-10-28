@@ -16,7 +16,7 @@ import { TelaSucesso } from "@/components/impressao/TelaSucesso";
 import { BotaoOndeRetirar } from "@/components/impressao/BotaoOndeRetirar";
 import { StatusImpressora } from "@/components/impressao/StatusImpressora";
 import { supabase } from "@/lib/supabase";
-import { enviarPDF, ErroCheckout, MSG_CONEXAO } from "@/lib/envio-pdf";
+import { enviarPDF, ErroCheckout, MSG_CONEXAO, registrarFalha } from "@/lib/envio-pdf";
 import type { ArquivoSelecionado } from "@/lib/pdf-utils";
 import type { ModoCor } from "@/lib/types";
 
@@ -107,6 +107,12 @@ const Impressao = () => {
       setPasso("PAGAMENTO");
     } catch (err) {
       console.error(err);
+      registrarFalha({
+        codigo: err instanceof ErroCheckout ? err.codigo : "INESPERADO",
+        causa: err instanceof ErroCheckout ? err.causa : err,
+        tamanhoBytes: file.size,
+        numPaginas,
+      });
       if (err instanceof ErroCheckout) {
         toast.error(err.message, { description: `Código: ${err.codigo}` });
       } else {
