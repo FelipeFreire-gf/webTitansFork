@@ -148,7 +148,8 @@ const Impressao = () => {
       if (!resp.ok) {
         // As mensagens de erro do create-pix já vêm em português.
         const body = await resp.json().catch(() => ({}));
-        throw new ErroCheckout(body.error ?? "Falha ao gerar PIX", `PIX-${resp.status}`);
+        const base = body.error ?? "Falha ao gerar PIX";
+        throw new Error(body.detalhe ? `${base}: ${body.detalhe}` : base);
       }
       const dados = (await resp.json()) as DadosPagamento;
       // O preço pode ter mudado (bot do Telegram) desde que a configuração
