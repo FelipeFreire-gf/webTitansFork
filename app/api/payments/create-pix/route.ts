@@ -1,6 +1,7 @@
 import { PDFDocument } from "pdf-lib";
 import { supabaseAdmin } from "@/lib/server/supabase-admin";
 import { mpPayment } from "@/lib/server/mercadopago";
+import { calcularPreco, formatBRL, temFaixaBase, type FaixaPreco } from "@/lib/faixas-preco";
 
 // Usa node:crypto (mercadopago), pdf-lib e @supabase/supabase-js — incompatíveis
 // com o runtime Edge. force-dynamic: a rota depende do request, nunca é cacheada.
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
 
   // ----------------------------------------------------------------------
   // Autoridade do servidor: contar páginas e calcular o preço a partir do
-  // PDF real e de config_precos. O que o cliente declarou é ignorado.
+  // PDF real e de faixas_preco. O que o cliente declarou é ignorado.
   // ----------------------------------------------------------------------
   const { data: pdfBlob, error: downloadError } = await supabaseAdmin.storage
     .from(BUCKET)
@@ -106,14 +107,13 @@ export async function POST(req: Request) {
     return Response.json({ error: "PDF sem páginas válidas" }, { status: 422 });
   }
 
-  const { data: preco, error: precoError } = await supabaseAdmin
-    .from("config_precos")
-    .select("valor_centavos_por_pagina")
-    .eq("modo_cor", pedido.modo_cor)
-    .maybeSingle();
+  const { data: faixas, error: faixasError } = await supabaseAdmin
+    .from("faixas_preco")
+    .select("a_partir_de, valor_centavos_por_pagina")
+    .eq("modo_cor", pedido.modo_cor);
 
-  if (precoError || !preco) {
-    console.error("Erro buscando preço para modo_cor:", pedido.modo_cor, precoError);
+  if (faixasError || !temFaixaBase(faixas as FaixaPreco[] | null)) {
+    console.error("Faixas de preço ausentes para modo_cor:", pedido.modo_cor, faixasError);
     return Response.json({ error: "Erro interno" }, { status: 500 });
   }
 
@@ -124,7 +124,12 @@ export async function POST(req: Request) {
       ? pedido.quantidade_copias
       : 1;
 
-  const valorCentavos = paginasReais * quantidadeCopias * preco.valor_centavos_por_pagina;
+  // A faixa sai do total impresso (páginas × cópias) e vale para todas as páginas.
+  const { faixa, valorCentavos } = calcularPreco(
+    paginasReais,
+    quantidadeCopias,
+    faixas as FaixaPreco[]
+  );
 
   const notificationUrl = resolverNotificationUrl(req);
 
@@ -132,7 +137,7 @@ export async function POST(req: Request) {
     const result = await mpPayment.create({
       body: {
         transaction_amount: valorCentavos / 100,
-        description: `Impressão TITANS — ${paginasReais} págs x ${quantidadeCopias} cópias ${pedido.modo_cor}`,
+        description: `Impressão TITANS — ${paginasReais} págs x ${quantidadeCopias} cópias ${pedido.modo_cor} a ${formatBRL(faixa.valor_centavos_por_pagina)}/pág`,
         payment_method_id: "pix",
         payer: {
           email: "cliente@titans.unb.br",

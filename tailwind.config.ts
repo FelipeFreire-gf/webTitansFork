@@ -91,6 +91,22 @@ export default {
 						height: '0'
 					}
 				},
+				'collapsible-down': {
+					from: {
+						height: '0'
+					},
+					to: {
+						height: 'var(--radix-collapsible-content-height)'
+					}
+				},
+				'collapsible-up': {
+					from: {
+						height: 'var(--radix-collapsible-content-height)'
+					},
+					to: {
+						height: '0'
+					}
+				},
 				'scroll-left': {
 					'0%': {
 						transform: 'translateX(0)'
@@ -118,6 +134,8 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
+				'collapsible-down': 'collapsible-down 0.3s ease-out',
+				'collapsible-up': 'collapsible-up 0.3s ease-out',
 				'scroll-left': 'scroll-left 24s linear infinite',
 				'walk': 'walk 1.1s ease-in-out infinite'
 			}

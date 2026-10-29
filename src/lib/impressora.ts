@@ -80,15 +80,3 @@ export function faixaImpressora(
       };
   }
 }
-
-// Rótulo do aviso de toner acabando. Só inclui o percentual quando há um valor
-// numérico válido — nunca mostra "%" sozinho.
-export function rotuloTonerAcabando(
-  detalhes: { toner_pct?: number | null } | null
-): string {
-  const pct = detalhes?.toner_pct;
-  if (typeof pct === "number" && Number.isFinite(pct)) {
-    return `Toner acabando · ${Math.round(pct)}%`;
-  }
-  return "Toner acabando";
-}

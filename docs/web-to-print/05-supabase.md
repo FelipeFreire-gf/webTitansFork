@@ -31,17 +31,43 @@ nullable (`0005`).
 **Índice:** `fila_impressao_status_idx` em `(status)` — o worker varre `status='PAGO'`
 eficientemente. A máquina de estados está em [02](02-fluxo-pedido.md).
 
-## `config_precos`
+## `faixas_preco`
 
-Preço por página, por modo de cor — editável no painel **sem deploy**.
+Preço por página em **faixas de volume**, por modo de cor — editável **sem deploy** (pelo
+bot do Telegram ou pelo Table Editor). Migration `0014_faixas_preco.sql`.
 
 | Campo | Tipo |
 | --- | --- |
-| `modo_cor` | text PK (`'PB'`/`'COLORIDO'`) |
+| `modo_cor` | text (`'PB'`/`'COLORIDO'`) |
+| `a_partir_de` | int `>= 1` — total de páginas impressas a partir do qual a faixa vale |
 | `valor_centavos_por_pagina` | int `> 0` |
+| `atualizado_em` | timestamptz (default `now()`) |
+| `atualizado_por` | bigint? — `from.id` do admin no Telegram; `null` no seed |
 
-Seed inicial: `PB = 50`, `COLORIDO = 200` (centavos). Mudar uma linha no Table Editor já
-afeta os próximos checkouts.
+PK `(modo_cor, a_partir_de)`. O seed copia `config_precos` como **faixa base**
+(`a_partir_de = 1`), então os preços não mudam até alguém criar faixas. A faixa base
+`a_partir_de = 1` deve sempre existir (o bot recusa removê-la; o `create-pix` responde 500
+sem ela).
+
+Regra: `páginas × cópias` escolhe **uma** faixa (a de maior `a_partir_de` ≤ total) e o
+preço dela vale para **todas** as páginas. Com faixas 1 → R$ 0,50, 20 → R$ 0,40 e
+100 → R$ 0,30: 19 págs = R$ 9,50; 20 págs = R$ 8,00; 150 págs = R$ 45,00.
+
+> **`config_precos` (legado).** Continua no banco, mas o código **não a usa mais**; foi
+> mantida só até o deploy. Será removida numa migration posterior.
+
+## `falhas_checkout` (`0013`)
+
+Telemetria das falhas do checkout: cada erro de leitura do arquivo, upload, registro do
+pedido ou geração do PIX vira uma linha com o código da etapa (`ENVIO-REDE`, `ENVIO-500`,
+`PEDIDO`, `PIX-502`, `LEITURA`, `INESPERADO`…), a mensagem do erro, o user-agent e — quando
+o navegador expõe as Client Hints — o modelo e a versão do Android. Falhas de upload que
+ainda serão repetidas têm `tentativa` (1 ou 2); a falha final, que chegou ao cliente, tem
+`tentativa = null`.
+
+- Escrita só via `POST /api/telemetria/falha-checkout` (service_role, rate-limit por IP);
+  RLS sem policy, como `chamados_ajuda`.
+- Retenção de 90 dias (regra 5 do `cleanup-fila`).
 
 ## Bucket `pdfs-impressao` (privado)
 
@@ -55,7 +81,7 @@ afeta os próximos checkouts.
 
 ## RLS
 
-RLS habilitado em `fila_impressao` e `config_precos`. A `service_role` (Vercel e sede)
+RLS habilitado em `fila_impressao` e `faixas_preco`. A `service_role` (Vercel e sede)
 **bypassa** RLS — por isso o webhook e o worker conseguem escrever.
 
 **`fila_impressao`:**
@@ -69,7 +95,8 @@ RLS habilitado em `fila_impressao` e `config_precos`. A `service_role` (Vercel e
   que adivinhar UUIDs.
 - **UPDATE / DELETE** — sem policy para `anon` → negados. O cliente nunca muda status.
 
-**`config_precos`:** `anon` só pode `SELECT`.
+**`faixas_preco`:** `anon`/`authenticated` só podem `SELECT` (`faixas_preco_select`);
+escrita só via `service_role` (bot do Telegram).
 
 > **Ponto de atenção.** A policy de SELECT é permissiva (`using (true)`): quem
 > souber/adivinhar um `id` lê a linha. A auditoria de RLS do hardening **aceitou** esse

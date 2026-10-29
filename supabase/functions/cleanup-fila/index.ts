@@ -3,12 +3,13 @@
 // pelo pg_cron via net.http_post (ver migration 0003), autenticada por um
 // segredo compartilhado (CLEANUP_FUNCTION_SECRET).
 //
-// Quatro regras (nunca toca em PAGO não impresso nem em token ainda válido):
+// Cinco regras (nunca toca em PAGO não impresso nem em token ainda válido):
 //   1. AGUARDANDO_PAGAMENTO há mais de 1h     -> remove PDF + apaga linha.
 //   2. IMPRESSO com printed_at > 7 dias       -> remove PDF, anula pdf_path.
 //   3. IMPRESSO com printed_at > 6 meses      -> apaga a linha (PDF já saiu em 2).
 //   4. reimpressao_tokens expirado, ou usado
 //      há mais de 24h                         -> apaga a linha (add-reimpressao-autorizada).
+//   5. falhas_checkout com mais de 90 dias    -> apaga a linha (telemetria do checkout).
 //
 // Deploy:  supabase functions deploy cleanup-fila
 // Secret:  supabase secrets set CLEANUP_FUNCTION_SECRET=<valor-aleatorio-longo>
@@ -64,12 +65,14 @@ Deno.serve(async (req) => {
   // token usado continua sendo prova de auditoria por um tempo curto antes de
   // ser descartado.
   const tokenUsadoHaMaisDe24h = new Date(agora - 24 * 60 * 60 * 1000).toISOString();
+  const noventaDiasAtras = new Date(agora - 90 * 24 * 60 * 60 * 1000).toISOString();
 
   const resumo = {
     orfaos_removidos: 0,
     pdfs_impressos_removidos: 0,
     impressos_apagados: 0,
     reimpressao_tokens_removidos: 0,
+    falhas_checkout_removidas: 0,
   };
 
   try {
@@ -139,6 +142,15 @@ Deno.serve(async (req) => {
       .or(`expira_em.lt.${agoraIso},usado_em.lt.${tokenUsadoHaMaisDe24h}`);
     if (errTokens) throw errTokens;
     resumo.reimpressao_tokens_removidos = tokensRemovidos ?? 0;
+
+    // ---- Regra 5: falhas_checkout com mais de 90 dias ----------------------
+    // Telemetria de diagnóstico: 90 dias bastam para achar padrões por aparelho.
+    const { error: errFalhas, count: falhasRemovidas } = await supabase
+      .from("falhas_checkout")
+      .delete({ count: "exact" })
+      .lt("criado_em", noventaDiasAtras);
+    if (errFalhas) throw errFalhas;
+    resumo.falhas_checkout_removidas = falhasRemovidas ?? 0;
 
     console.log("cleanup-fila ok:", resumo);
     return new Response(JSON.stringify(resumo), {
