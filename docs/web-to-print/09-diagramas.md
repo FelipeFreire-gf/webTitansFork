@@ -35,7 +35,7 @@ flowchart TB
 
   subgraph SUPA["Supabase"]
     ST["Storage<br/>bucket privado pdfs-impressao"]
-    DB[("Postgres<br/>fila_impressao + config_precos<br/>RLS + Realtime")]
+    DB[("Postgres<br/>fila_impressao + faixas_preco<br/>RLS + Realtime")]
   end
 
   subgraph SEDE["Sede — Linux + systemd"]
@@ -90,7 +90,7 @@ flowchart TD
   D3 --> D4{"Soma de paginas confere<br/>e mesclado ate 30 MB?"}
   D4 -->|nao| B
   D4 -->|sim| E
-  E["Escolher modo de cor<br/>ver estimativa de preco (config_precos)"]
+  E["Escolher copias (so preto e branco)<br/>ver total e regua de faixas (faixas_preco)"]
   E --> F["Upload PDF direto ao Storage (anon key)<br/>INSERT fila_impressao = AGUARDANDO_PAGAMENTO"]
   F --> G["POST /api/payments/create-pix<br/>{ pedidoId }"]
 
@@ -102,7 +102,7 @@ flowchart TD
     SRV2 --> SRV3{"PDF integro<br/>no servidor?"}
     SRV3 -->|invalido / criptografado| Z1(["422 — arquivo invalido"])
     SRV3 -->|Storage indisponivel| Z1B(["502 — storage fora"])
-    SRV3 -->|sim| SRV4["Calcula valor_centavos<br/>paginas x config_precos(modo_cor) x copias<br/>Cria cobranca PIX no MP<br/>(idempotencyKey = pedidoId)"]
+    SRV3 -->|sim| SRV4["Calcula valor_centavos<br/>faixa de faixas_preco(modo_cor) escolhida<br/>por paginas x copias<br/>Cria cobranca PIX no MP<br/>(idempotencyKey = pedidoId)"]
     SRV4 --> SRV5["Grava mp_payment_id,<br/>num_paginas, valor_centavos no DB"]
     SRV5 --> I["Devolve QR Code + expiration_date_to"]
   end
@@ -171,7 +171,7 @@ flowchart LR
     UC1(["Enviar PDF"])
     UC2(["Configurar impressao e ver preco"])
     UC3(["Pagar via PIX"])
-    UC4(["Acompanhar status do pedido<br/>(Realtime + polling)"])
+    UC4(["Acompanhar status do pedido<br/>(Realtime + polling, ate IMPRESSO)"])
     UC5(["Gerar cobranca PIX<br/>(create-pix)"])
     UC6(["Confirmar pagamento<br/>(webhook mercadopago)"])
     UC7(["Imprimir documento<br/>(CUPS + failover)"])

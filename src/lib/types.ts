@@ -8,6 +8,20 @@ export type StatusPedido =
   | "ERRO"
   | "CANCELADO";
 
+// Status que só existem depois de o PIX ser aprovado. Comparar só com "PAGO"
+// perde o pagamento quando o worker já avançou o pedido antes de o cliente
+// consultar — comum no celular, com a aba suspensa durante o app do banco.
+const STATUS_POS_PAGAMENTO: ReadonlySet<StatusPedido> = new Set<StatusPedido>([
+  "PAGO",
+  "IMPRIMINDO",
+  "IMPRESSO",
+  "ERRO",
+]);
+
+export function pagamentoConfirmado(status: StatusPedido | null | undefined): boolean {
+  return status != null && STATUS_POS_PAGAMENTO.has(status);
+}
+
 export type Pedido = {
   id: string;
   created_at: string;
@@ -23,4 +37,3 @@ export type Pedido = {
   printed_at: string | null;
 };
 
-export type Precos = Record<ModoCor, number>;

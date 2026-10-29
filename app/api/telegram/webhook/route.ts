@@ -8,10 +8,15 @@ import {
 } from "@/lib/server/reimpressao";
 import { resolverPedidoPorProtocolo } from "@/lib/server/pedido-protocolo";
 import { gerarCodigoReimpressao, JANELA_EXPIRACAO_HORAS } from "@/lib/server/reimpressao-tokens";
+import {
+  definirFaixa,
+  removerFaixa,
+  responderPrecos,
+} from "@/lib/server/precos-bot";
 
-// Webhook de ENTRADA do bot do Telegram — infraestrutura nova: até aqui o
-// sistema só enviava mensagens (sendMessage em /api/kiosk/help). Trata os
-// comandos administrativos de reimpressão (/reimprimir, /gerar_codigo).
+// Webhook de ENTRADA do bot do Telegram. Trata os comandos administrativos de
+// reimpressão (/reimprimir, /gerar_codigo) e de preço (/precos, /faixa,
+// /remover_faixa — lógica em precos-bot.ts).
 // node:crypto (comparação em tempo constante do secret_token) e supabase-js
 // (via módulos de reimpressão) exigem o runtime Node; force-dynamic porque
 // depende do corpo do request.
@@ -45,15 +50,17 @@ function parseAdminIds(raw: string | undefined): Set<number> {
   );
 }
 
-// Extrai "/comando" e o argumento seguinte, tolerando o sufixo @NomeDoBot que
-// o Telegram anexa a comandos usados dentro de grupos.
-function parseComando(texto: string): { comando: string; argumento: string } | null {
+// Extrai "/comando" e os argumentos seguintes, tolerando o sufixo @NomeDoBot
+// que o Telegram anexa a comandos usados dentro de grupos.
+function parseComando(texto: string): { comando: string; argumentos: string[] } | null {
   const partes = texto.trim().split(/\s+/);
   const primeira = partes[0];
   if (!primeira || !primeira.startsWith("/")) return null;
   const comando = primeira.slice(1).split("@")[0]?.toLowerCase() ?? "";
-  return { comando, argumento: partes[1] ?? "" };
+  return { comando, argumentos: partes.slice(1) };
 }
+
+const COMANDOS = new Set(["reimprimir", "gerar_codigo", "precos", "faixa", "remover_faixa"]);
 
 const MENSAGEM_USO =
   "Uso:\n/reimprimir <protocolo de 8 dígitos>\n/gerar_codigo <protocolo de 8 dígitos>";
@@ -176,7 +183,7 @@ export async function POST(req: Request) {
   }
 
   const comando = parseComando(texto);
-  if (!comando || (comando.comando !== "reimprimir" && comando.comando !== "gerar_codigo")) {
+  if (!comando || !COMANDOS.has(comando.comando)) {
     // Mensagens comuns do grupo não são comandos nossos — ignora em silêncio
     // (responder a toda mensagem do grupo seria spam).
     return Response.json({ ok: true });
@@ -192,10 +199,29 @@ export async function POST(req: Request) {
   }
 
   try {
-    if (comando.comando === "reimprimir") {
-      await tratarReimprimir(chatId, comando.argumento, fromId);
-    } else {
-      await tratarGerarCodigo(chatId, comando.argumento, fromId);
+    const argumento = comando.argumentos[0] ?? "";
+    switch (comando.comando) {
+      case "reimprimir":
+        await tratarReimprimir(chatId, argumento, fromId);
+        break;
+      case "gerar_codigo":
+        await tratarGerarCodigo(chatId, argumento, fromId);
+        break;
+      case "precos":
+        await enviarMensagemTelegram({ chatId: String(chatId), texto: await responderPrecos() });
+        break;
+      case "faixa":
+        await enviarMensagemTelegram({
+          chatId: String(chatId),
+          texto: await definirFaixa(comando.argumentos, fromId),
+        });
+        break;
+      case "remover_faixa":
+        await enviarMensagemTelegram({
+          chatId: String(chatId),
+          texto: await removerFaixa(comando.argumentos),
+        });
+        break;
     }
   } catch (err) {
     console.error("Erro processando comando do telegram-webhook:", err);

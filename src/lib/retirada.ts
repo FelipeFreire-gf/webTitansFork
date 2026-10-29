@@ -2,6 +2,11 @@
 // O local é fixo e público; não há consulta a banco, Storage ou API.
 
 export const LOCAL_RETIRADA = "Sala 208, Prédio LDTEA – FCTE Gama";
+// Forma curta para espaços apertados (topo do checkout, etapas do pedido).
+export const LOCAL_RETIRADA_CURTO = "Sala 208, LDTEA";
+
+export const ROTA_RETIRADA = "/impressao/retirada";
+export const ROTULO_RETIRADA = "Onde Pegar Minha Impressão?";
 
 export type FotoRetirada = {
   src: string;

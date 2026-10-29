@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Delete, AlertTriangle, CheckCircle2, KeyRound } from "lucide-react";
+import { Delete, CheckCircle2, KeyRound } from "lucide-react";
 import type { StatusPedido } from "@/lib/types";
 import { KioskOverlay } from "./KioskOverlay";
 import { formatarHorario, formatarDataRelativa } from "./status";
@@ -25,8 +25,6 @@ type EstadoConsulta =
   | { fase: "nao_encontrado" }
   | { fase: "erro" };
 
-type CategoriaChamado = "NAO_SAIU" | "SAIU_COM_DEFEITO" | "OUTRO";
-
 // Resgate do código de reimpressão (fluxo B, spec kiosk-help-requests): campo
 // separado do teclado de protocolo da consulta acima, endpoint dedicado.
 type CampoReimpressao = "protocolo" | "codigo";
@@ -36,12 +34,6 @@ type EstadoReimpressao =
   | { fase: "sucesso"; posicaoNaFila: number | null }
   | { fase: "erro" }
   | { fase: "limite" };
-
-const CATEGORIAS: { id: CategoriaChamado; rotulo: string }[] = [
-  { id: "NAO_SAIU", rotulo: "Minha impressão não saiu" },
-  { id: "SAIU_COM_DEFEITO", rotulo: "Saiu com defeito" },
-  { id: "OUTRO", rotulo: "Outro problema" },
-];
 
 const TECLAS_HEX = [
   "1", "2", "3", "A",
@@ -119,7 +111,7 @@ function orientacao(dados: ConsultaResposta): {
     default:
       return {
         titulo: "Houve um problema com este pedido",
-        detalhe: "Chame a equipe pelo botão abaixo para resolver.",
+        detalhe: "Fale com a equipe pelo Telegram abaixo para resolver.",
         chamarEmDestaque: true,
       };
   }
@@ -176,13 +168,11 @@ function TecladoHex({
   );
 }
 
-// Overlay de ajuda: consulta por protocolo (teclado hex próprio) + chamado à equipe.
+// Overlay de ajuda: consulta por protocolo (teclado hex próprio), contato com a
+// equipe pelo grupo do Telegram (QR) e resgate de código de reimpressão.
 export function OverlayAjuda({ onClose }: Props) {
   const [codigo, setCodigo] = useState("");
   const [consulta, setConsulta] = useState<EstadoConsulta>({ fase: "digitando" });
-  const [chamado, setChamado] = useState<"idle" | "enviando" | "ok" | "erro">(
-    "idle"
-  );
   // Painel do QR do Telegram — estado interno do overlay (não um segundo
   // overlay: a spec do kiosk exige um overlay por vez).
   const [telegramAberto, setTelegramAberto] = useState(false);
@@ -208,7 +198,6 @@ export function OverlayAjuda({ onClose }: Props) {
     if (codigo.length >= 8) return;
     setCodigo((c) => c + char);
     setConsulta({ fase: "digitando" });
-    setChamado("idle");
   }
   function apagar() {
     setCodigo((c) => c.slice(0, -1));
@@ -217,7 +206,6 @@ export function OverlayAjuda({ onClose }: Props) {
   function limpar() {
     setCodigo("");
     setConsulta({ fase: "digitando" });
-    setChamado("idle");
   }
 
   async function consultar() {
@@ -237,25 +225,6 @@ export function OverlayAjuda({ onClose }: Props) {
       setConsulta({ fase: "encontrado", dados });
     } catch {
       setConsulta({ fase: "erro" });
-    }
-  }
-
-  async function chamarEquipe(categoria: CategoriaChamado) {
-    setChamado("enviando");
-    try {
-      const res = await fetch("/api/kiosk/help", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          protocolo: completo ? codigo : undefined,
-          categoria,
-        }),
-      });
-      // 201 = criado; 429 = já avisado há pouco (tratamos como sucesso amigável).
-      if (res.ok || res.status === 429) setChamado("ok");
-      else setChamado("erro");
-    } catch {
-      setChamado("erro");
     }
   }
 
@@ -329,6 +298,12 @@ export function OverlayAjuda({ onClose }: Props) {
   // O painel do Telegram nasce no fim do overlay, abaixo da dobra em telas
   // baixas — rola até ele ao abrir, seguindo o padrão do resultado da consulta.
   const telegramRef = useRef<HTMLDivElement | null>(null);
+  // Pedido com problema (ERRO/CANCELADO): abre o QR do Telegram sozinho, já que
+  // o próximo passo do cliente é falar com a equipe.
+  const destacarTelegram = dadosEncontrado?.chamarEmDestaque === true;
+  useEffect(() => {
+    if (destacarTelegram) setTelegramAberto(true);
+  }, [destacarTelegram, consulta]);
   useEffect(() => {
     if (!telegramAberto) return;
     telegramRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -401,49 +376,16 @@ export function OverlayAjuda({ onClose }: Props) {
         )}
       </div>
 
-      {/* Chamar a equipe */}
-      <div className="mt-8 border-t border-white/10 pt-6">
-        {chamado === "ok" ? (
-          <div className="flex items-center justify-center gap-3 rounded-2xl border border-green-500/30 bg-green-500/10 p-5 text-xl font-semibold text-green-200">
-            <CheckCircle2 className="h-7 w-7" /> Equipe avisada! Aguarde um momento.
-          </div>
-        ) : (
-          <>
-            <p
-              className={`mb-3 flex items-center gap-2 text-xl font-semibold ${
-                dadosEncontrado?.chamarEmDestaque
-                  ? "text-red-300"
-                  : "text-zinc-200"
-              }`}
-            >
-              <AlertTriangle className="h-6 w-6" /> Precisa de ajuda? Chame a
-              equipe:
-            </p>
-            <div className="grid grid-cols-1 gap-3">
-              {CATEGORIAS.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  disabled={chamado === "enviando"}
-                  onClick={() => chamarEquipe(cat.id)}
-                  className="min-h-[56px] rounded-xl border border-white/15 bg-white/5 px-5 text-xl font-semibold text-white transition active:scale-95 disabled:opacity-40"
-                >
-                  {cat.rotulo}
-                </button>
-              ))}
-            </div>
-            {chamado === "erro" && (
-              <p className="mt-3 text-center text-lg text-red-300">
-                Não foi possível avisar a equipe. Tente novamente.
-              </p>
-            )}
-          </>
-        )}
-      </div>
-
       {/* Falar com a equipe no Telegram — só quando o convite está configurado. */}
       {telegramDisponivel && TELEGRAM_HELP_INVITE_URL && (
-        <div className="mt-8 border-t border-white/10 pt-6" ref={telegramRef}>
+        <div
+          className={
+            destacarTelegram
+              ? "mt-8 rounded-2xl border border-red-500/40 bg-red-500/10 p-4"
+              : "mt-8 border-t border-white/10 pt-6"
+          }
+          ref={telegramRef}
+        >
           <button
             type="button"
             onClick={() => setTelegramAberto((aberto) => !aberto)}

@@ -60,10 +60,9 @@ fila já existente — ver a seção "Heartbeat e saúde da impressora" em
 | `INALCANCAVEL` | "Impressora indisponível — equipe avisada" | vermelho |
 | heartbeat velho (`offline`) | "Sistema de impressão offline" | vermelho — prioridade máxima, sobrepõe qualquer `estado` |
 
-Além da faixa principal, um selo discreto **"Toner acabando · N%"** (âmbar) aparece
-sempre que `detalhes.toner_baixo` for `true` — independente do estado (mesmo com a
-impressora `OK`/`IMPRIMINDO`), porque toner baixo é só aviso: a impressora continua
-aceitando e concluindo trabalhos normalmente.
+O aviso de toner baixo (`detalhes.toner_baixo`) **não é mais exibido ao público**
+(nem no totem nem no checkout): ele é enviado só à equipe, no Telegram, pelo worker de
+impressão. Ao público aparece apenas o estado `SEM_TONER` quando o toner esgota.
 
 ## Pré-requisitos
 

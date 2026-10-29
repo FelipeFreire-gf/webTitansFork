@@ -38,7 +38,7 @@ no **Supabase** (Postgres + Storage + Realtime). A impressão física acontece n
             ▼                             ▼                             ▼
        ┌───────────────────────────────────────────────────────────────────────────┐
        │                    SUPABASE — projeto IMPRESSORA (legado)                  │
-       │  Postgres: fila_impressao, config_precos, impressora_status, chamados_ajuda,│
+       │  Postgres: fila_impressao, faixas_preco, impressora_status, chamados_ajuda,│
        │            reimpressao_tokens, reimpressoes  (+ RLS, Realtime, pg_cron)     │
        │  Storage:  bucket privado `pdfs-impressao`                                   │
        │  Edge Function: cleanup-fila (retenção, horária)                            │
@@ -293,13 +293,13 @@ Máquina de 4 passos: `UPLOAD → CONFIG → PAGAMENTO → SUCESSO` (ou `TIMEOUT
    contagem de páginas via `pdfjs-dist` no navegador.
 2. **Mesclagem** — 2+ arquivos são unidos por `pdf-lib` no cliente; só o PDF
    final (≤ 30 MB) sobe. 1 arquivo sobe byte a byte, sem reescrita.
-3. **Configuração** — modo de cor (`PB`/`COLORIDO`); preço **estimado** de
-   `config_precos`.
+3. **Configuração** — cópias (só P&B: `modo_cor` fixo em `PB`); preço **estimado** por
+   faixa de volume (`faixas_preco`).
 4. **Criação** — upload direto ao bucket `pdfs-impressao` (`<uuid>/<nome>.pdf`) +
    `INSERT` em `fila_impressao` (`status = AGUARDANDO_PAGAMENTO`, sem
    `valor_centavos` — a RLS exige `NULL`).
 5. **PIX** — `POST /api/payments/create-pix` **baixa o PDF, reconta as páginas
-   com `pdf-lib`, recalcula o valor** (`páginas × cópias × config_precos[modo]`),
+   com `pdf-lib`, recalcula o valor** (faixa de `faixas_preco[modo]` escolhida por `páginas × cópias`),
    cria a cobrança no Mercado Pago (`idempotencyKey = pedidoId`) e devolve QR
    Code + Copia-e-Cola + expiração (30 min).
 6. **Acompanhamento** — `usePedidoStatus`: Realtime (`postgres_changes` filtrado
@@ -337,8 +337,9 @@ Interface full-screen touch para quem imprime na sede:
 - **Consulta por protocolo** — `GET /api/kiosk/pedido?protocolo=XXXXXXXX`
   (server-side, `service_role`, resolve o intervalo de UUID pelo prefixo) devolve
   status + posição na fila.
-- **Chamar a equipe** — `POST /api/kiosk/help` grava em `chamados_ajuda`
-  (rate-limit de 5 min por protocolo+categoria) e notifica o Telegram.
+- **Ajuda** — o overlay oferece apenas o grupo da equipe no Telegram (QR code).
+  A rota `/api/kiosk/help` e os botões de chamado foram removidos; a tabela
+  `chamados_ajuda` continua no banco, mas o app não a grava mais.
 - **Código de reimpressão** — `POST /api/kiosk/reimpressao` resgata um token de
   uso único (`R-XXXXXXXX`), rate-limit por IP (5/5 min), mensagens genéricas
   anti-oráculo.
@@ -472,7 +473,7 @@ Detalhe por tabela na §7. Resumo do que o cliente `anon` pode:
   `valor_centavos`/`mp_payment_id`/`paid_at`/`printed_at` nulos e
   `quantidade_copias >= 1`; `SELECT` liberado (`using (true)` — a proteção é o
   UUID opaco na query). **Sem** `UPDATE`/`DELETE`.
-- **`config_precos`**: só `SELECT`.
+- **`faixas_preco`**: só `SELECT` (escrita só `service_role`, via bot).
 - **`impressora_status`**: só `SELECT`.
 - **`chamados_ajuda`, `reimpressao_tokens`, `reimpressoes`** (projeto
   IMPRESSORA): RLS habilitado **sem nenhuma policy** → todo acesso `anon`
@@ -525,7 +526,7 @@ Migrations em `supabase/migrations/0001…0012`.
 ### 7.1 Diagrama de relacionamentos (lógico)
 
 ```
-config_precos ──(modo_cor, leitura no create-pix e no checkout)──┐
+faixas_preco ───(modo_cor, leitura no create-pix e no checkout)──┐
                                                                  │
                                             ┌────────────────────▼─────────────────┐
                                             │           fila_impressao             │
@@ -593,17 +594,31 @@ assinam `postgres_changes` na sua linha.
 
 ---
 
-### 7.3 Tabela `config_precos`
+### 7.3 Tabela `faixas_preco`
 
-Preço por página, por modo de cor. Editável no painel do Supabase **sem deploy**.
+Preço por página em **faixas de volume**, por modo de cor (migration 0014). O total
+`páginas × cópias` do pedido escolhe **uma** faixa (a de maior `a_partir_de` ≤ total) e o
+preço dela vale para todas as páginas. Editável **sem deploy**: pelo bot do Telegram
+(`/precos`, `/faixa`, `/remover_faixa`) ou pelo painel do Supabase. É a única fonte de
+preço: o bot escreve (`service_role`), checkout e totem leem (`anon`), o `create-pix`
+cobra (`service_role`).
 
 | Coluna | Tipo | Nulo? | Descrição |
 | --- | --- | :---: | --- |
-| `modo_cor` | `text` | não | **PK**. `CHECK IN ('PB','COLORIDO')`. |
+| `modo_cor` | `text` | não | **PK (parte 1)**. `CHECK IN ('PB','COLORIDO')`. |
+| `a_partir_de` | `int` | não | **PK (parte 2)**. `CHECK (>= 1)`. Total de páginas impressas a partir do qual a faixa vale. |
 | `valor_centavos_por_pagina` | `int` | não | `CHECK (> 0)`. |
+| `atualizado_em` | `timestamptz` | não | Default `now()`. |
+| `atualizado_por` | `bigint` | sim | `from.id` do admin no Telegram; `null` no seed. |
 
-**Seed inicial**: `PB = 50`, `COLORIDO = 200` (centavos).
-**RLS**: `config_precos_anon_select` — `anon` só `SELECT`.
+**Seed**: copia `config_precos` como faixa base (`a_partir_de = 1`). A faixa base deve
+sempre existir.
+**RLS**: `faixas_preco_select` — `anon`/`authenticated` só `SELECT`; sem policy de escrita
+(só `service_role`).
+
+> **`config_precos` (legado, sem uso).** Tabela anterior (`modo_cor` PK,
+> `valor_centavos_por_pagina`, seed `PB = 50`, `COLORIDO = 200`). O código não a lê mais;
+> fica até o deploy e será removida em migration posterior.
 
 ---
 
@@ -638,9 +653,9 @@ Registros do botão "Chamar a equipe" do kiosk.
 | `resolvido_em` | `timestamptz` | sim | — | Marcação manual de resolução (não usada pela UI atual). |
 
 **Índice**: `chamados_ajuda_recentes_idx` em `(criado_em desc)` — para o
-rate-limit da API (chamado idêntico em 5 min é rejeitado).
-**RLS**: habilitado **sem policy** → acesso `anon` negado; só a Route Handler
-`/api/kiosk/help` (`service_role`) escreve/lê.
+rate-limit da API (legado). **Não é mais escrita pelo app** (a rota
+`/api/kiosk/help` foi removida; a ajuda do totem só oferece o Telegram).
+**RLS**: habilitado **sem policy** → acesso `anon` negado.
 
 ---
 
@@ -723,9 +738,8 @@ antes da chamada a `/api/servicos/impressao-3d`.
 **Notificação**: a Route Handler dispara, em paralelo, um aviso no Telegram
 (`TELEGRAM_CHAT_ID`) e um e-mail pra equipe (`PEDIDOS_3D_EMAIL_EQUIPE`, via
 Resend — mesmo provedor do convite de membro em `src/lib/server/email.ts`) a
-cada novo pedido, ambos best-effort (mesmo padrão de
-`chamados_ajuda`/`/api/kiosk/help`) — a persistência nunca falha por causa da
-notificação. O e-mail de pedidos `ARQUIVOS` anexa os arquivos do bucket
+cada novo pedido, ambos best-effort (mesmo padrão dos avisos do worker) — a
+persistência nunca falha por causa da notificação. O e-mail de pedidos `ARQUIVOS` anexa os arquivos do bucket
 `arquivos-3d` (até 20 MB somados; acima disso, só os caminhos).
 **Sem automação de orçamento**: `qualidade`/dimensões não geram preço nem
 tempo de impressão automaticamente; a equipe cota manualmente a partir dos
@@ -889,7 +903,7 @@ Em `push`/`pull_request` para `main`, `ubuntu-latest`, Node 22:
 | Kanban de tarefas | V1 em memória — falta tabela `tarefas` + realtime |
 | Formulário de impressão 3D | Captação persistida (`pedidos_3d`) + aviso no Telegram e por e-mail (com anexo dos arquivos) — orçamento (tempo/gramas de filamento) ainda é manual, sem fatiamento automático (ex.: PrusaSlicer/OrcaSlicer CLI na sede) |
 | Feedback | Só e-mail (EmailJS), sem histórico consultável |
-| Modo `COLORIDO` no checkout | Ainda aparece na UI, mas a HP Laser 135w é monocromática (sai em cinza, com aviso no log do worker) |
+| Modo `COLORIDO` legado | O checkout só oferece P&B, mas o banco e o worker ainda aceitam `COLORIDO` (sai em cinza, com aviso no log do worker) — dá para restringir numa migration futura |
 | Policy `SELECT` de `fila_impressao` | Permissiva (`using (true)`) — risco aceito; token de leitura separado da PK fica como evolução |
 | Worker em máquina única | Se a sede cai, pedidos acumulam em `PAGO` e drenam quando volta |
 

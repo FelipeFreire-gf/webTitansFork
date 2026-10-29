@@ -1,37 +1,22 @@
 import { supabase } from "./supabase";
-import type { ModoCor, Precos } from "./types";
+import { temFaixaBase, ordenarFaixas, type FaixaPreco } from "./faixas-preco";
+import type { ModoCor } from "./types";
 
-export async function fetchPrecos(): Promise<Precos> {
+export { formatBRL } from "./faixas-preco";
+
+// Faixas de preço da modalidade, em ordem crescente. Mesma tabela que o
+// create-pix usa para cobrar e o bot do Telegram edita.
+export async function fetchFaixas(modo: ModoCor): Promise<FaixaPreco[]> {
   const { data, error } = await supabase
-    .from("config_precos")
-    .select("modo_cor, valor_centavos_por_pagina");
+    .from("faixas_preco")
+    .select("a_partir_de, valor_centavos_por_pagina")
+    .eq("modo_cor", modo);
 
   if (error) throw error;
 
-  const precos: Partial<Precos> = {};
-  for (const row of data as Array<{ modo_cor: ModoCor; valor_centavos_por_pagina: number }>) {
-    precos[row.modo_cor] = row.valor_centavos_por_pagina;
+  const faixas = (data ?? []) as FaixaPreco[];
+  if (!temFaixaBase(faixas)) {
+    throw new Error(`faixas_preco incompleta — falta a faixa base de ${modo}`);
   }
-
-  if (precos.PB === undefined) {
-    throw new Error("config_precos incompleta — falta a linha PB");
-  }
-
-  return precos as Precos;
-}
-
-export function calcularValor(
-  numPaginas: number,
-  quantidadeCopias: number,
-  modo: ModoCor,
-  precos: Precos,
-): number {
-  return numPaginas * quantidadeCopias * precos[modo];
-}
-
-export function formatBRL(centavos: number): string {
-  return (centavos / 100).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+  return ordenarFaixas(faixas);
 }

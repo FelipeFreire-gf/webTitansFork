@@ -1,12 +1,11 @@
 import { PROTOCOLO_RE } from "@/lib/protocolo";
 import { resgatarCodigoReimpressao } from "@/lib/server/reimpressao-tokens";
-import { excedeuLimite } from "@/lib/server/rate-limit";
+import { excedeuLimite, ipDoRequest } from "@/lib/server/rate-limit";
 
 // Resgate do código de reimpressão de uso único no totem. Server-side
-// (service_role), em route SEPARADA de /api/kiosk/pedido (consulta) e
-// /api/kiosk/help (chamados) — de propósito: se o resgate compartilhasse
-// route com a consulta, respostas diferenciadas virariam um oráculo de força
-// bruta de códigos (design D5).
+// (service_role), em route SEPARADA de /api/kiosk/pedido (consulta) — de
+// propósito: se o resgate compartilhasse route com a consulta, respostas
+// diferenciadas virariam um oráculo de força bruta de códigos (design D5).
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -19,10 +18,6 @@ const RATE_LIMIT_JANELA_MS = 5 * 60 * 1000;
 
 const MENSAGEM_GENERICA =
   "Código inválido ou pedido não elegível para reimpressão. Confira com a equipe.";
-
-function ipDoRequest(req: Request): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "desconhecido";
-}
 
 export async function POST(req: Request) {
   const ip = ipDoRequest(req);

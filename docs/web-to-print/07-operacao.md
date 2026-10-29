@@ -112,6 +112,69 @@ o pedido vira `ERRO` "nada impresso" (re-filar para `PAGO` é seguro). Isso depe
 > Pedidos presos em `IMPRIMINDO` voltam sozinhos para `PAGO` só após `STUCK_TIMEOUT`
 > (padrão 15 min). Para reprocessar antes, mude o status para `PAGO` manualmente.
 
+## Pagamento aprovado que não aparece na fila
+
+Sintoma: o cliente pagou (o PIX consta no Mercado Pago), mas o pedido não está na fila nem
+em `fila_impressao`. Quem marca `PAGO` é o webhook do MP, no servidor — o navegador do
+cliente não participa. Se o webhook não chega ou falha, a linha fica em
+`AGUARDANDO_PAGAMENTO` e a **regra 1 do `cleanup-fila` apaga a linha e o PDF após 1 h**,
+sem consultar o MP. Por isso a evidência no banco some: investigue **logo**, antes de 1 h.
+
+1. **Painel do MP** → o pagamento → anote o `external_reference` (UUID do pedido) e veja o
+   histórico de notificações do webhook (status HTTP de cada tentativa).
+2. **Logs da Vercel** em `/api/webhooks/mercadopago` no horário do pagamento. Procure
+   `[webhook] assinatura rejeitada` (401), `MERCADOPAGO_WEBHOOK_SECRET ausente` (500),
+   `Falha ao buscar pagamento no MP` (502), `Erro UPDATE PAGO` ou timeout.
+3. **Supabase**:
+   `select id, status, created_at, mp_payment_id from fila_impressao where id = '<uuid>';`
+   e, nos logs da Edge Function `cleanup-fila`, se `orfaos_removidos` subiu nesse horário.
+4. **Destino do webhook**: `PUBLIC_BASE_URL` na Vercel (produção) deve ser
+   `https://www.roboticstitans.com.br`, e
+   `curl -i -X POST https://www.roboticstitans.com.br/api/webhooks/mercadopago` deve
+   responder 400/401 — nunca 307/308 (o MP não segue redirect em POST).
+5. **Casos antigos** (linha já apagada): o painel do MP é a única fonte; o
+   `external_reference` identifica o pedido, mas o PDF já foi removido — peça um novo envio.
+
+Correção candidata, a decidir após o diagnóstico: antes de apagar um órfão com
+`mp_payment_id`, o `cleanup-fila` consulta o MP e, se aprovado, marca `PAGO` em vez de apagar.
+
+## Alterar os preços
+
+O preço de impressão é por **faixa de volume**: o total `páginas × cópias` do pedido escolhe
+uma faixa, e o preço por página dela vale para todas as páginas. Quem administra altera as
+faixas pelo bot do Telegram, sem deploy. Só funciona para o modo P&B.
+
+Só usuários listados em `TELEGRAM_ADMIN_IDS` (os mesmos do `/reimprimir`) podem usar os
+comandos; qualquer outra pessoa é ignorada em silêncio.
+
+| Comando | O que faz |
+| --- | --- |
+| `/precos` | Mostra a tabela de faixas atual. |
+| `/faixa <a partir de N páginas> <valor por página>` | Cria ou atualiza a faixa. Ex.: `/faixa 20 0,40` (vírgula ou ponto; "R$" opcional). `/faixa 1 0,50` muda o preço base. Valor entre R$ 0,01 e R$ 10,00. Responde com a tabela atualizada e **avisa** (sem bloquear) se uma faixa maior ficar mais cara que a anterior. |
+| `/remover_faixa <N>` | Remove a faixa que começa em N. Recusa N = 1 (preço base). |
+
+Exemplo: com as faixas 1 → R$ 0,50, 20 → R$ 0,40 e 100 → R$ 0,30, um pedido de 19 páginas
+custa R$ 9,50, de 20 páginas R$ 8,00 e de 150 páginas R$ 45,00.
+
+A mudança vale a partir do **próximo PIX gerado** (o `create-pix` lê a tabela na hora de
+cobrar; checkout e totem releem ao abrir). Se o preço mudar com a tela do cliente já
+aberta, ele vê o aviso "O valor foi atualizado. Confira antes de pagar.".
+
+**Passo manual (uma vez):** registrar os comandos no BotFather (`/setcommands`, escolha o
+bot e cole). O `/setcommands` substitui a lista inteira, por isso ela repete os comandos de
+reimpressão:
+
+```text
+reimprimir - Reimprime um pedido: /reimprimir <protocolo>
+gerar_codigo - Gera código de reimpressão: /gerar_codigo <protocolo>
+precos - Mostra a tabela de preços
+faixa - Cria/atualiza uma faixa: /faixa 20 0,40
+remover_faixa - Remove uma faixa: /remover_faixa 20
+```
+
+> **Alternativa:** editar a tabela `faixas_preco` direto no Table Editor do Supabase também
+> funciona. Mantenha sempre a faixa base `a_partir_de = 1`, senão o `create-pix` responde 500.
+
 ## Monitoramento no dia a dia
 
 - **Logs ao vivo:** `journalctl -u print-worker -f`.
@@ -119,6 +182,20 @@ o pedido vira `ERRO` "nada impresso" (re-filar para `PAGO` é seguro). Isso depe
 - **Fila da impressora:** `lpstat -o <PRINTER_NAME>`.
 - **Fila de pedidos:** no Supabase, observar linhas em `PAGO` que não avançam (worker
   parado?) e acúmulo de `ERRO`.
+- **Falhas de envio do PDF:** relatos de "não consegui enviar" chegam como linhas em
+  `falhas_checkout` (ver [05](05-supabase.md)). Para achar padrão por aparelho:
+
+  ```sql
+  select codigo, coalesce(modelo, '?') as modelo, count(*)
+  from falhas_checkout
+  where tentativa is null and criado_em > now() - interval '30 days'
+  group by 1, 2 order by 3 desc;
+  ```
+
+  Sem modelo (Safari/Firefox não têm Client Hints), o `user_agent` ainda identifica o
+  sistema e o navegador — o Mi Browser aparece como `XiaoMi/MiuiBrowser`.
+  Implantação: aplique a migration `0013` **antes** de publicar o `cleanup-fila`, cuja
+  regra 5 apaga linhas dessa tabela.
 - **Worker fantasma:** garanta que o worker rode em **uma** máquina só. Uma instância
   esquecida (ex.: num notebook) compete pelos pedidos e pode gerar `ERRO`/estados
   inesperados. O claim atômico evita impressão dupla, mas dois workers ainda confundem o
