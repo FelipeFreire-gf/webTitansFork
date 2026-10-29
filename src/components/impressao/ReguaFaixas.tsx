@@ -69,21 +69,25 @@ export function ReguaFaixas({ faixas, totalPaginas, className = "" }: Props) {
               className="absolute top-1/2 -ml-1.5 -mt-1.5 h-3 w-3 rounded-full bg-foreground ring-[3px] ring-card transition-[left] duration-500 ease-out"
               style={{ left }}
             >
+              {/* Balão e setinha formam uma peça só: a setinha é um losango
+                  da cor do balão, metade escondida nele, com a ponta quase
+                  encostando no marcador. Nas pontas da régua o balão desloca
+                  10px para fora, mantendo a setinha sob a parte reta. */}
               <span
                 className={cn(
-                  "absolute bottom-[calc(100%+8px)] whitespace-nowrap rounded-full bg-foreground px-2 text-xs font-bold leading-[18px] text-background tabular-nums",
-                  alinhamento === "esquerda" && "left-0",
-                  alinhamento === "direita" && "right-0",
+                  "absolute bottom-[calc(100%+7px)] whitespace-nowrap rounded-full bg-foreground px-2 text-xs font-bold leading-[18px] text-background tabular-nums",
+                  alinhamento === "esquerda" && "-left-2.5",
+                  alinhamento === "direita" && "-right-2.5",
                   alinhamento === "centro" && "left-1/2 -translate-x-1/2"
                 )}
               >
                 {rotulo}
                 <span
                   className={cn(
-                    "absolute top-full border-4 border-transparent border-t-foreground",
-                    alinhamento === "esquerda" && "left-0.5",
-                    alinhamento === "direita" && "right-0.5",
-                    alinhamento === "centro" && "left-1/2 -ml-1"
+                    "absolute top-full -mt-1 h-2 w-2 rotate-45 rounded-br-[2px] bg-foreground",
+                    alinhamento === "esquerda" && "left-4 -translate-x-1/2",
+                    alinhamento === "direita" && "right-4 translate-x-1/2",
+                    alinhamento === "centro" && "left-1/2 -translate-x-1/2"
                   )}
                 />
               </span>
