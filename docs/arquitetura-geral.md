@@ -293,7 +293,7 @@ Máquina de 4 passos: `UPLOAD → CONFIG → PAGAMENTO → SUCESSO` (ou `TIMEOUT
    contagem de páginas via `pdfjs-dist` no navegador.
 2. **Mesclagem** — 2+ arquivos são unidos por `pdf-lib` no cliente; só o PDF
    final (≤ 30 MB) sobe. 1 arquivo sobe byte a byte, sem reescrita.
-3. **Configuração** — modo de cor (`PB`/`COLORIDO`); preço **estimado** por
+3. **Configuração** — cópias (só P&B: `modo_cor` fixo em `PB`); preço **estimado** por
    faixa de volume (`faixas_preco`).
 4. **Criação** — upload direto ao bucket `pdfs-impressao` (`<uuid>/<nome>.pdf`) +
    `INSERT` em `fila_impressao` (`status = AGUARDANDO_PAGAMENTO`, sem
@@ -903,7 +903,7 @@ Em `push`/`pull_request` para `main`, `ubuntu-latest`, Node 22:
 | Kanban de tarefas | V1 em memória — falta tabela `tarefas` + realtime |
 | Formulário de impressão 3D | Captação persistida (`pedidos_3d`) + aviso no Telegram e por e-mail (com anexo dos arquivos) — orçamento (tempo/gramas de filamento) ainda é manual, sem fatiamento automático (ex.: PrusaSlicer/OrcaSlicer CLI na sede) |
 | Feedback | Só e-mail (EmailJS), sem histórico consultável |
-| Modo `COLORIDO` no checkout | Ainda aparece na UI, mas a HP Laser 135w é monocromática (sai em cinza, com aviso no log do worker) |
+| Modo `COLORIDO` legado | O checkout só oferece P&B, mas o banco e o worker ainda aceitam `COLORIDO` (sai em cinza, com aviso no log do worker) — dá para restringir numa migration futura |
 | Policy `SELECT` de `fila_impressao` | Permissiva (`using (true)`) — risco aceito; token de leitura separado da PK fica como evolução |
 | Worker em máquina única | Se a sede cai, pedidos acumulam em `PAGO` e drenam quando volta |
 

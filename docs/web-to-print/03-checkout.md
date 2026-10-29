@@ -14,17 +14,31 @@ acompanhando o status. **Não** processa pagamento nem imprime, e só usa a anon
 | --- | --- |
 | `app/impressao/page.tsx` + `src/views/Impressao.tsx` | Rota do App Router (wrapper `"use client"`) + a view que orquestra a máquina de passos (`UPLOAD → CONFIG → PAGAMENTO → SUCESSO`/`TIMEOUT`) e faz o upload + criação do pedido + chamada do PIX. |
 | `src/components/impressao/UploadPDF.tsx` | Seleção/drag-drop de **um ou mais** PDFs, lista ordenável, validação, contagem de páginas e mesclagem. |
-| `src/components/impressao/ConfiguracaoImpressao.tsx` | Escolha de modo de cor, cópias e exibição do preço por faixa de volume. |
+| `src/components/impressao/StatusRetirada.tsx` | Topo da página em todos os passos: estado da impressora e o atalho "Sala 208, LDTEA" para `/impressao/retirada`, no mesmo cartão. |
+| `src/components/impressao/ConfiguracaoImpressao.tsx` | Escolha de cópias (só P&B — a 135w é monocromática), total e régua de faixas de volume. |
+| `src/components/impressao/ReguaFaixas.tsx` | Régua das faixas de preço: um segmento por faixa, marcador com o total impresso e o preço de cada faixa. |
 | `src/components/impressao/TelaPagamento.tsx` | Mostra QR Code, Copia e Cola, timer, e aguarda confirmação. |
-| `src/components/impressao/TelaSucesso.tsx` | Tela final com o protocolo (8 primeiros caracteres do UUID). |
+| `src/components/impressao/TelaSucesso.tsx` | Tela final: confirmação, ticket do pedido, status ao vivo e as saídas. |
+| `src/components/impressao/TicketPedido.tsx` | Comprovante: protocolo (8 primeiros caracteres do UUID), páginas, valor, hora do pagamento e o canhoto com o local de retirada. |
+| `src/components/impressao/StatusPedidoAoVivo.tsx` | Linha de status do pedido abaixo do ticket, que abre as etapas (Pago → Imprimindo → Pronto) com os horários. |
 | `src/lib/pdf-utils.ts` | `validarArquivoPDF` (tipo + 30 MB), `contarPaginas` (pdfjs-dist), `validarSelecao` (lista) e `mesclarPDFs` (pdf-lib). |
-| `src/lib/faixas-preco.ts` | Regra de preço pura (cliente e servidor): `calcularPreco`, `proximaFaixa`, `intervalosDasFaixas`, `temFaixaBase`, `ordenarFaixas`, `formatBRL`. |
+| `src/lib/faixas-preco.ts` | Regra de preço pura (cliente e servidor): `calcularPreco`, `intervalosDasFaixas`, `posicaoNaRegua`, `temFaixaBase`, `ordenarFaixas`, `formatBRL`. |
 | `src/lib/pricing.ts` | `fetchFaixas(modo)` (lê `faixas_preco`) e re-exporta `formatBRL`. |
 | `src/lib/supabase.ts` | Cliente Supabase do navegador (anon key, sem sessão persistida). |
-| `src/hooks/usePedidoStatus.ts` | Realtime + polling do status do pedido. |
+| `src/hooks/usePedidoStatus.ts` | Realtime + polling do status do pedido até o pagamento. |
+| `src/hooks/useAcompanhamentoPedido.ts` | Realtime + polling do pedido depois do pagamento, até `IMPRESSO` (status, horários, páginas e valor). |
+| `src/lib/retirada.ts` | Local de retirada (forma longa e curta), rota e rótulo do atalho, fotos do caminho. |
 | `src/lib/types.ts` | `ModoCor`, `StatusPedido`, `Pedido`. |
 
 ## Fluxo, passo a passo
+
+### Topo da página (`StatusRetirada`)
+
+Igual em todos os passos, abaixo do título: um cartão com duas linhas no celular (lado a
+lado em tela larga). A de cima é o estado da impressora (`useImpressoraStatus` +
+`faixaImpressora`, a mesma fonte do kiosk), com fundo na cor do tom; enquanto a primeira
+leitura não chega, vira um esqueleto da mesma altura. A de baixo é o atalho "Sala 208,
+LDTEA ›" para `/impressao/retirada`.
 
 ### 1. Upload (`UploadPDF`)
 
@@ -68,18 +82,23 @@ acompanhando o status. **Não** processa pagamento nem imprime, e só usa a anon
 
 - A cada abertura da tela, `fetchFaixas(modo)` lê as faixas de `faixas_preco` do Supabase
   (ordenadas por `a_partir_de`), então um preço alterado pelo bot aparece sem recarregar o app.
-- "Total de páginas" é o total do PDF **já mesclado** — a soma de todos os arquivos do
-  pedido —, e a legenda indica quantos arquivos foram juntados.
+- A linha sob o título mostra as páginas do PDF **já mesclado** (a soma de todos os
+  arquivos do pedido, com quantos foram juntados) e o modo, "preto e branco".
 - O total é `calcularPreco(numPaginas, copias, faixas)`: o total impresso
   (`páginas × cópias`, a impressão é só frente) escolhe **uma** faixa, e o preço por página
-  dela vale para **todas** as páginas. Resultado em centavos, recalculado ao trocar modo ou
+  dela vale para **todas** as páginas. Resultado em centavos, recalculado ao trocar as
   cópias. Exibição via `formatBRL` (`Intl` pt-BR).
-- A tela mostra o preço por página aplicado; quando uma faixa acima da base vale, a dica
-  "Desconto por volume: a partir de N páginas impressas"; e, havendo uma próxima faixa,
-  "Com N páginas impressas ou mais (páginas × cópias), sai R$ X/página".
+- Cópias e total ficam na mesma linha. O total é neutro: na tela, o laranja fica só no
+  "Pagar com PIX".
+- Com mais de uma faixa, a `ReguaFaixas` mostra um segmento por faixa, preenchido até o
+  total impresso, com um balão "N páginas" sobre o marcador e o preço de cada faixa
+  embaixo. A posição vem de `posicaoNaRegua`: cada faixa ocupa uma fatia igual e, dentro
+  dela, a posição é proporcional até o início da próxima (a última vai até o dobro do seu
+  início). A régua substitui as dicas em texto sobre desconto e próxima faixa.
 - O campo de cópias aceita digitação livre (pode ficar vazio enquanto se digita e volta a 1
   ao sair do campo), tem botões − e + e máximo de 999.
-- "Pagar com PIX" devolve `{ modoCor, valorCentavos }` para a página.
+- "Pagar com PIX" devolve `{ modoCor, quantidadeCopias, valorCentavos }` para a página
+  (`modoCor` é sempre `PB`).
 
 ### 4. Criação do pedido + PIX (`Impressao.tsx → confirmarConfiguracao`)
 
@@ -111,9 +130,16 @@ mostra o toast "O valor foi atualizado. Confira antes de pagar.".
 
 ### 6. Sucesso (`TelaSucesso`)
 
-- Mostra "Pagamento confirmado!" e o **protocolo** = 8 primeiros caracteres do UUID, em
-  maiúsculas, para o cliente apresentar na retirada.
-- "Fazer outro pedido" e "Voltar ao início" descartam o pedido guardado.
+- "Pagamento confirmado!" numa linha, e logo abaixo o **ticket** (`TicketPedido`): o
+  **protocolo** = 8 primeiros caracteres do UUID, em maiúsculas, que identifica o pedido;
+  páginas impressas, valor e hora do pagamento; um picote; e o canhoto em gradiente "Onde
+  Pegar Minha Impressão?" com o endereço, que leva a `/impressao/retirada`.
+- Abaixo do ticket, a linha de **status ao vivo** (`StatusPedidoAoVivo`): "Na fila de
+  impressão", "Imprimindo agora", "Pronto · impresso às HH:MM" ou, em `ERRO`, "Problema na
+  impressão · fale com a equipe pelo totem". Só a setinha indica que ela abre as etapas
+  (Pago → Imprimindo/Impresso → Pronto para retirar), com os horários.
+- Depois vêm o texto que orienta a retirada e o suporte pelo totem, e as saídas discretas
+  "Fazer outro pedido · Voltar ao início", que descartam o pedido guardado.
 
 ### Retomada após reload (`src/lib/pedido-em-andamento.ts`)
 
@@ -152,11 +178,21 @@ vazia, o worker já levou o pedido a `IMPRIMINDO`/`IMPRESSO` quando o cliente vo
 tela ficava em "Aguardando…" e acabava em "Pagamento não confirmado" com a impressão
 pronta. `CANCELADO` (PIX recusado/expirado no MP) encerra como timeout.
 
+### Depois do pagamento (`useAcompanhamentoPedido`)
+
+A tela de sucesso continua seguindo o pedido: mesma dupla Realtime (canal filtrado pelo
+`id`) + polling, lendo `status`, `paid_at`, `printed_at`, `num_paginas`,
+`quantidade_copias` e `valor_centavos` (a policy de SELECT do anon já permite). O polling
+roda a cada 5 s em `PAGO`/`IMPRIMINDO`, a cada 15 s em `ERRO` (a reimpressão pode devolver
+o pedido a `PAGO`) e para em `IMPRESSO`. Como os dados vêm do banco, o ticket volta
+completo depois de um reload. A hora de impressão só aparece com status `IMPRESSO`: a
+reimpressão devolve o pedido a `PAGO` sem limpar o `printed_at` anterior.
+
 ## Decisões e pontos de atenção
 
-- **A opção COLORIDO ainda aparece na UI**, mas a 135w é monocromática. A remoção do
-  COLORIDO do checkout é uma mudança companheira separada; até lá, pedidos COLORIDO são
-  impressos em tons de cinza (com aviso no log do worker).
+- **O checkout só oferece P&B**, porque a 135w é monocromática: o `modo_cor` vai fixo como
+  `PB`. O banco e o worker ainda aceitam `COLORIDO` (pedidos legados), que sai em tons de
+  cinza, com aviso no log do worker.
 - **O preço é autoridade do servidor.** A tela de configuração mostra apenas uma
   *estimativa*; o cliente não envia `valor_centavos` no INSERT. O `create-pix` reconta as
   páginas do PDF e recalcula o valor pelas faixas de `faixas_preco` (ver [04](04-pagamento-pix.md) e a capability

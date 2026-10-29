@@ -13,8 +13,7 @@ import { UploadPDF } from "@/components/impressao/UploadPDF";
 import { ConfiguracaoImpressao } from "@/components/impressao/ConfiguracaoImpressao";
 import { TelaPagamento } from "@/components/impressao/TelaPagamento";
 import { TelaSucesso } from "@/components/impressao/TelaSucesso";
-import { BotaoOndeRetirar } from "@/components/impressao/BotaoOndeRetirar";
-import { StatusImpressora } from "@/components/impressao/StatusImpressora";
+import { StatusRetirada } from "@/components/impressao/StatusRetirada";
 import { supabase } from "@/lib/supabase";
 import { enviarPDF, ErroCheckout, MSG_CONEXAO, registrarFalha } from "@/lib/envio-pdf";
 import { protocoloDoPedido } from "@/lib/protocolo";
@@ -209,12 +208,10 @@ const Impressao = () => {
               </span>
             </h1>
             <p className="text-muted-foreground mb-4">
-              Envie o arquivo, escolha cor ou preto-e-branco, pague via PIX e retire na sede.
+              Envie o arquivo, pague via PIX e retire na sede.
             </p>
 
-            <StatusImpressora className="mb-4" />
-
-            <BotaoOndeRetirar className="mb-8" />
+            <StatusRetirada className="mb-8" />
 
             {passo === "UPLOAD" && (
               <UploadPDF
